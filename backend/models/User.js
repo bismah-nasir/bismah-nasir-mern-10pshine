@@ -12,8 +12,8 @@ const userSchema = mongoose.Schema(
             unique: true,
             // Regex to validate email format
             match: [
-                /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-                "Please add a valid email",
+                /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                "Please add a valid email address",
             ],
         },
         password: {
