@@ -1,16 +1,19 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { RiEyeLine, RiEyeOffLine, RiErrorWarningFill } from "react-icons/ri";
 import AuthLayout from "../components/AuthLayout";
 
 const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
+    const navigate = useNavigate();
 
     // 1. State to hold user input
     const [formData, setFormData] = useState({ email: "", password: "" });
 
     // 2. State to hold validation errors
     const [errors, setErrors] = useState({});
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -29,7 +32,6 @@ const Login = () => {
         if (!formData.email) {
             newErrors.email = "Email is required";
         } else {
-            // This is a standard regex. Ensure it matches your Database regex logic.
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(formData.email)) {
                 newErrors.email = "Please enter a valid email address";
@@ -46,12 +48,35 @@ const Login = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // 4. Run validation before submitting
+
         if (validateForm()) {
-            console.log("Form is valid! Submitting...", formData);
-            // API call goes here
+            setIsLoading(true);
+            try {
+                const response = await fetch("/api/users/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(formData),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    toast.success("Successfully logged in!");
+
+                    localStorage.setItem("userInfo", JSON.stringify(data));
+                    navigate("/");
+                } else {
+                    toast.error(data.message || "Invalid credentials");
+                }
+            } catch (error) {
+                toast.error("Server not responding.");
+            } finally {
+                setIsLoading(false);
+            }
+        } else {
+            toast.error("Please fill in all fields correctly");
         }
     };
 
@@ -139,8 +164,9 @@ const Login = () => {
                 {/* Submit Button */}
                 <button
                     type="submit"
-                    className="w-full bg-primary hover:bg-primary-dark text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 whitespace-nowrap cursor-pointer">
-                    Sign In
+                    disabled={isLoading}
+                    className="w-full bg-primary hover:bg-primary-dark text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 whitespace-nowrap cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                    {isLoading ? "Signing In..." : "Sign In"}
                 </button>
 
                 {/* Toggle to SignUp */}
