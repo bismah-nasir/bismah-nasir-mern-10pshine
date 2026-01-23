@@ -1,10 +1,12 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { RiEyeLine, RiEyeOffLine, RiErrorWarningFill } from "react-icons/ri";
 import AuthLayout from "../components/AuthLayout";
 
 const SignUp = () => {
     const [showPassword, setShowPassword] = useState(false);
+    const navigate = useNavigate();
 
     // 1. State to hold user input
     const [formData, setFormData] = useState({
@@ -16,8 +18,15 @@ const SignUp = () => {
     // 2. State to hold validation errors
     const [errors, setErrors] = useState({});
 
+    const [isLoading, setIsLoading] = useState(false);
+
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.id]: e.target.value });
+
+        // Clear error when user starts typing again
+        if (errors[e.target.id]) {
+            setErrors({ ...errors, [e.target.id]: null });
+        }
     };
 
     // 3. Validation Logic
@@ -50,11 +59,42 @@ const SignUp = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // 4. Run validation before submitting
+
         if (validateForm()) {
-            console.log("SignUp Data:", formData);
+            setIsLoading(true);
+            try {
+                const response = await fetch("/api/users/register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        username: formData.name,
+                        email: formData.email,
+                        password: formData.password,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    toast.success("Account created! Redirecting...");
+
+                    setTimeout(() => {
+                        navigate("/login");
+                    }, 2000);
+                } else {
+                    // Show API error
+                    toast.error(data.message || "Registration failed");
+                }
+            } catch (error) {
+                toast.error("Server error. Please try again.");
+            } finally {
+                setIsLoading(false);
+            }
+        } else {
+            // Toast for validation errors
+            toast.error("Please fix the errors in the form");
         }
     };
 
@@ -151,8 +191,9 @@ const SignUp = () => {
                 {/* Submit Button */}
                 <button
                     type="submit"
-                    className="w-full bg-primary hover:bg-primary-dark text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 whitespace-nowrap cursor-pointer">
-                    Create Account
+                    disabled={isLoading}
+                    className="w-full bg-primary hover:bg-primary-dark text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 whitespace-nowrap cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                    {isLoading ? "Creating Account..." : "Create Account"}
                 </button>
 
                 {/* Toggle to Login */}
