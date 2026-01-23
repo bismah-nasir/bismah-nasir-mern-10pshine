@@ -1,13 +1,13 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
-const pino = require("pino");
+const logger = require("./config/logger");
 const userRoutes = require("./routes/userRoutes");
+const noteRoutes = require("./routes/noteRoutes");
 
 // Load env vars
 dotenv.config();
 
-const logger = pino();
 const app = express();
 
 // Connect to Database
@@ -18,6 +18,7 @@ app.use(express.urlencoded({ extended: false }));
 
 // Routes
 app.use("/api/users", userRoutes);
+app.use("/api/notes", noteRoutes);
 
 const PORT = process.env.PORT || 5000;
 

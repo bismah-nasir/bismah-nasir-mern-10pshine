@@ -1,13 +1,5 @@
 const mongoose = require("mongoose");
-const pino = require("pino");
-
-// Initialize logger
-const logger = pino({
-    transport: {
-        target: "pino-pretty",
-        options: { colorize: true },
-    },
-});
+const logger = require("./logger");
 
 const connectDB = async () => {
     try {
