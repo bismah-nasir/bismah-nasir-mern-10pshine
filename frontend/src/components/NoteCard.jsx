@@ -74,8 +74,14 @@ const NoteCard = ({ note, onDelete, onEdit, onPin }) => {
             </div>
 
             {/* Content Preview */}
-            <p className="text-sm text-slate-600 line-clamp-3 mb-4 min-h-15">
-                {note.content}
+            <p className="text-sm text-slate-600 line-clamp-3 mb-4 min-h-15 wrap-break-word">
+                {
+                    note.content
+                        ?.replace(/<[^>]+>/g, " ") // Replace HTML tags with a space (prevents words merging)
+                        .replace(/&nbsp;/g, " ") // Replace &nbsp; with a normal space
+                        .replace(/\s+/g, " ") // Collapse multiple spaces into one
+                        .trim() // Remove leading/trailing space
+                }
             </p>
 
             {/* Footer: Date & Status */}
@@ -88,11 +94,19 @@ const NoteCard = ({ note, onDelete, onEdit, onPin }) => {
                     </span>
                 </div>
                 <div className="flex items-center gap-1">
-                    <div
-                        className={`w-2 h-2 rounded-full ${note.isPinned ? "bg-orange-500" : "bg-green-500"}`}></div>
-                    <span className="text-xs text-slate-500">
-                        {note.isPinned ? "Pinned" : "Active"}
-                    </span>
+                    {note.tags?.slice(0, 2).map((tag, index) => (
+                        <span
+                            key={index}
+                            className="px-2 py-1 bg-indigo-50 text-indigo-600 text-xs rounded-md font-medium">
+                            {tag}
+                        </span>
+                    ))}
+                    {/* Counter if there are more than 2 tags */}
+                    {note.tags?.length > 2 && (
+                        <span className="text-xs text-slate-400 font-medium">
+                            +{note.tags.length - 2}
+                        </span>
+                    )}
                 </div>
             </div>
         </div>

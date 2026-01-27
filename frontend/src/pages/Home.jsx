@@ -6,6 +6,7 @@ import { RiAddLine, RiSortDesc } from "react-icons/ri";
 import Navbar from "../components/Navbar";
 import NoteCard from "../components/NoteCard";
 import DeleteModal from "../components/DeleteModal";
+import NoteModal from "../components/NoteModal";
 
 const Home = () => {
     const navigate = useNavigate();
@@ -19,6 +20,10 @@ const Home = () => {
         noteId: null,
     });
     const [isDeleting, setIsDeleting] = useState(false);
+    const [openEditor, setOpenEditor] = useState({
+        isOpen: false,
+        note: null, // null = create, object = edit
+    });
 
     // 1. Check Auth & Load User
     useEffect(() => {
@@ -116,6 +121,17 @@ const Home = () => {
         }
     };
 
+    // 4. Create Logic
+    // Click "New Note" button
+    const handleCreateNote = () => {
+        setOpenEditor({ isOpen: true, note: null });
+    };
+
+    // Click "Edit" in dropdown
+    const handleEdit = (note) => {
+        setOpenEditor({ isOpen: true, note: note });
+    };
+
     const updateIsPinned = async (note) => {
         try {
             const user = JSON.parse(localStorage.getItem("userInfo"));
@@ -149,11 +165,6 @@ const Home = () => {
         }
     };
 
-    // Placeholder for Edit (I will build the Editor Modal later)
-    const handleEdit = (note) => {
-        toast("Edit feature coming soon!", { icon: "🔧" });
-    };
-
     return (
         <div className="min-h-screen bg-slate-50">
             {/* Navigation */}
@@ -182,7 +193,9 @@ const Home = () => {
                                 <option value="created">Date Created</option>
                             </select>
                         </div>
-                        <button className="bg-primary hover:bg-primary-dark text-white font-medium px-6 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center gap-2 whitespace-nowrap cursor-pointer">
+                        <button
+                            onClick={handleCreateNote}
+                            className="bg-primary hover:bg-primary-dark text-white font-medium px-6 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center gap-2 whitespace-nowrap cursor-pointer">
                             <RiAddLine className="text-xl" />
                             New Note
                         </button>
@@ -227,6 +240,14 @@ const Home = () => {
                 onClose={() => setDeleteModal({ isOpen: false, noteId: null })}
                 onConfirm={confirmDelete}
                 loading={isDeleting}
+            />
+
+            {/* Rendering Note Modal */}
+            <NoteModal
+                isOpen={openEditor.isOpen}
+                onClose={() => setOpenEditor({ isOpen: false, note: null })}
+                note={openEditor.note}
+                refreshNotes={fetchNotes}
             />
         </div>
     );
