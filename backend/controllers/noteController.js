@@ -6,7 +6,11 @@ const logger = require("../config/logger");
 // @access  Private
 const getNotes = async (req, res) => {
     try {
-        const notes = await Note.find({ user: req.user.id });
+        // Sort by pinned first, then by creation date (newest first)
+        const notes = await Note.find({ user: req.user.id }).sort({
+            isPinned: -1,
+            createdAt: -1,
+        });
 
         // Log success (optional: helpful for debugging flow)
         logger.info(`Fetched ${notes.length} notes for user ${req.user.id}`);
@@ -22,7 +26,9 @@ const getNotes = async (req, res) => {
 // @route   POST /api/notes
 // @access  Private
 const createNote = async (req, res) => {
-    if (!req.body.title || !req.body.content) {
+    const { title, content, category, tags, isPinned, isArchived } = req.body;
+
+    if (!title || !content) {
         logger.warn(
             `User ${req.user.id} tried to create note without title/content`,
         );
@@ -33,10 +39,13 @@ const createNote = async (req, res) => {
 
     try {
         const note = await Note.create({
-            title: req.body.title,
-            content: req.body.content,
-            category: req.body.category,
             user: req.user.id,
+            title,
+            content,
+            category: category || "General",
+            tags: tags || [],
+            isPinned: isPinned || false,
+            isArchived: isArchived || false,
         });
 
         logger.info(
