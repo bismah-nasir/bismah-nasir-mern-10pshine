@@ -76,6 +76,41 @@ const loginUser = async (req, res) => {
     }
 };
 
+// @desc    Update user profile (Password only for now)
+// @route   PUT /api/users/profile
+// @access  Private
+const updateUserProfile = async (req, res) => {
+    try {
+        // req.user.id comes from the 'protect' middleware
+        const user = await User.findById(req.user.id);
+
+        if (user) {
+            // Update Password if provided
+            if (req.body.password) {
+                const salt = await bcrypt.genSalt(10);
+                user.password = await bcrypt.hash(req.body.password, salt);
+            }
+
+            // Save the updated user
+            const updatedUser = await user.save();
+
+            logger.info(`User profile updated: ${updatedUser.email}`);
+
+            res.json({
+                _id: updatedUser._id,
+                username: updatedUser.username,
+                email: updatedUser.email,
+                token: generateToken(updatedUser._id),
+            });
+        } else {
+            res.status(404).json({ message: "User not found" });
+        }
+    } catch (error) {
+        logger.error(`Update Profile Error: ${error.message}`);
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // Generate JWT
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -86,4 +121,5 @@ const generateToken = (id) => {
 module.exports = {
     registerUser,
     loginUser,
+    updateUserProfile,
 };
