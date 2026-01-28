@@ -19,6 +19,14 @@ const protect = async (req, res, next) => {
             // Get user from the token (exclude password)
             req.user = await User.findById(decoded.id).select("-password");
 
+            // If user was deleted
+            if (!req.user) {
+                logger.warn(
+                    `Auth Failed: User not found with ID ${decoded.id}`,
+                );
+                return res.status(401).json({ message: "User not found" });
+            }
+
             return next();
         } catch (error) {
             logger.error(`Auth Failed: ${error.message}`);
