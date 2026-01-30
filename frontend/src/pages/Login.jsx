@@ -154,11 +154,11 @@ const Login = () => {
                         />
                         <span className="ml-2 text-slate-600">Remember me</span>
                     </label>
-                    <a
-                        href="#"
+                    <Link
+                        to="/forgot-password"
                         className="text-primary hover:text-primary-dark font-medium whitespace-nowrap">
                         Forgot password?
-                    </a>
+                    </Link>
                 </div>
 
                 {/* Submit Button */}
