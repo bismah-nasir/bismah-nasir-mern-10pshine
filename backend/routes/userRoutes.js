@@ -4,6 +4,8 @@ const {
     registerUser,
     loginUser,
     updateUserProfile,
+    forgotPassword,
+    resetPassword,
 } = require("../controllers/userController");
 
 // Import Auth Middleware
@@ -15,5 +17,8 @@ router.post("/login", loginUser);
 
 // Profile Route (Protected)
 router.put("/profile", protect, updateUserProfile);
+
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password/:resetToken", resetPassword);
 
 module.exports = router;
