@@ -61,17 +61,36 @@ const NoteCard = ({ note, onDelete, onEdit, onPin }) => {
                             <>
                                 <div
                                     className="fixed inset-0 z-10"
-                                    onClick={() => setShowMenu(false)}></div>
-                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-20">
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowMenu(false);
+                                    }}></div>
+
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-slate-200 p-1 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+                                    {/* Edit Button */}
                                     <button
-                                        onClick={() => onEdit(note)}
-                                        className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-3 cursor-pointer">
-                                        <RiEditLine /> Edit Note
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onEdit(note);
+                                            setShowMenu(false);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 rounded-lg flex items-center gap-2 cursor-pointer transition-colors">
+                                        <RiEditLine className="text-lg text-slate-500" />
+                                        Edit Note
                                     </button>
+
+                                    <div className="border-t border-slate-100 my-1 mx-2"></div>
+
+                                    {/* Delete Button */}
                                     <button
-                                        onClick={() => onDelete(note._id)}
-                                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 cursor-pointer">
-                                        <RiDeleteBinLine /> Delete Note
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDelete(note._id);
+                                            setShowMenu(false);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2 cursor-pointer transition-colors">
+                                        <RiDeleteBinLine className="text-lg" />
+                                        Delete Note
                                     </button>
                                 </div>
                             </>
