@@ -12,8 +12,15 @@ import {
 const NoteCard = ({ note, onDelete, onEdit, onPin }) => {
     const [showMenu, setShowMenu] = useState(false);
 
+    // Logic: Determine if note is newly created or updated
+    const isUpdated =
+        new Date(note.updatedAt).getTime() >
+        new Date(note.createdAt).getTime() + 1000;
+    const dateDisplay = isUpdated ? note.updatedAt : note.createdAt;
+    const labelDisplay = isUpdated ? "Updated" : "Created";
+
     return (
-        <div className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-200 cursor-pointer group relative">
+        <div className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-200 group relative">
             {/* Header: Title & Menu */}
             <div className="flex items-start justify-between mb-3">
                 <h3 className="text-lg font-semibold text-slate-850 group-hover:text-primary transition-colors line-clamp-1 flex-1 pr-2">
@@ -89,8 +96,8 @@ const NoteCard = ({ note, onDelete, onEdit, onPin }) => {
                 <div className="flex items-center gap-2 text-xs text-slate-500">
                     <RiTimeLine className="text-[13px]" />
                     <span>
-                        Updated{" "}
-                        {format(new Date(note.updatedAt), "MMM d, yyyy")}
+                        {labelDisplay}{" "}
+                        {format(new Date(dateDisplay), "MMM d, yyyy")}
                     </span>
                 </div>
                 <div className="flex items-center gap-1">

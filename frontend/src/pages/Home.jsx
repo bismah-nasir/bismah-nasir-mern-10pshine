@@ -15,7 +15,6 @@ const Home = () => {
     const [filteredNotes, setFilteredNotes] = useState([]);
     const [sortType, setSortType] = useState("updated"); // 'updated' or 'created'
     const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState("");
     const [deleteModal, setDeleteModal] = useState({
         isOpen: false,
         noteId: null,
