@@ -85,7 +85,7 @@ const Login = () => {
             title="Welcome Back"
             subtitle="Sign in to access your notes and continue your work">
             <form className="space-y-6" onSubmit={handleSubmit} noValidate>
-                {/* Email Input */}
+                {/* Email */}
                 <div className="relative">
                     <input
                         id="email"
@@ -103,14 +103,14 @@ const Login = () => {
 
                     {/* Error */}
                     {errors.email && (
-                        <div className="flex items-center mt-2 p-2 rounded-lg bg-red-100 border border-red-200 text-red-600 text-xs">
-                            <RiErrorWarningFill className="mr-2 text-lg" />
+                        <p className="text-red-500 text-xs mt-1 flex items-center">
+                            <RiErrorWarningFill className="mr-1" />{" "}
                             {errors.email}
-                        </div>
+                        </p>
                     )}
                 </div>
 
-                {/* Password Input */}
+                {/* Password */}
                 <div className="relative">
                     <input
                         id="password"
@@ -138,10 +138,10 @@ const Login = () => {
 
                     {/* Error */}
                     {errors.password && (
-                        <div className="flex items-center mt-2 p-2 rounded-lg bg-red-100 border border-red-200 text-red-600 text-xs">
-                            <RiErrorWarningFill className="mr-2 text-lg" />
+                        <p className="text-red-500 text-xs mt-1 flex items-center">
+                            <RiErrorWarningFill className="mr-1" />{" "}
                             {errors.password}
-                        </div>
+                        </p>
                     )}
                 </div>
 

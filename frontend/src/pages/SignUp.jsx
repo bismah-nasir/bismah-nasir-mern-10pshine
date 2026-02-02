@@ -6,6 +6,7 @@ import AuthLayout from "../components/AuthLayout";
 
 const SignUp = () => {
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const navigate = useNavigate();
 
     // 1. State to hold user input
@@ -13,6 +14,7 @@ const SignUp = () => {
         name: "",
         email: "",
         password: "",
+        confirmPassword: "",
     });
 
     // 2. State to hold validation errors
@@ -42,7 +44,7 @@ const SignUp = () => {
         if (!formData.email) {
             newErrors.email = "Email is required";
         } else {
-            // This is a standard regex. Ensure it matches your Database regex logic.
+            // This is a standard regex logic.
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(formData.email)) {
                 newErrors.email = "Please enter a valid email address";
@@ -52,6 +54,15 @@ const SignUp = () => {
         // Password Validation
         if (!formData.password) {
             newErrors.password = "Password is required";
+        } else if (formData.password.length < 6) {
+            newErrors.password = "Password must be at least 6 characters";
+        }
+
+        // Confirm Password Validation
+        if (!formData.confirmPassword) {
+            newErrors.confirmPassword = "Password is required";
+        } else if (formData.password !== formData.confirmPassword) {
+            newErrors.confirmPassword = "Passwords do not match";
         }
 
         setErrors(newErrors);
@@ -102,8 +113,8 @@ const SignUp = () => {
         <AuthLayout
             title="Create Account"
             subtitle="Join us to start organizing your notes securely">
-            <form className="space-y-6" onSubmit={handleSubmit} noValidate>
-                {/* Name Input */}
+            <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+                {/* Name */}
                 <div className="relative">
                     <input
                         id="name"
@@ -121,14 +132,14 @@ const SignUp = () => {
 
                     {/* Error */}
                     {errors.name && (
-                        <div className="flex items-center mt-2 p-2 rounded-lg bg-red-100 border border-red-200 text-red-600 text-xs">
-                            <RiErrorWarningFill className="mr-2 text-lg" />
+                        <p className="text-red-500 text-xs mt-1 flex items-center">
+                            <RiErrorWarningFill className="mr-1" />{" "}
                             {errors.name}
-                        </div>
+                        </p>
                     )}
                 </div>
 
-                {/* Email Input */}
+                {/* Email */}
                 <div className="relative">
                     <input
                         id="email"
@@ -146,14 +157,14 @@ const SignUp = () => {
 
                     {/* Error */}
                     {errors.email && (
-                        <div className="flex items-center mt-2 p-2 rounded-lg bg-red-100 border border-red-200 text-red-600 text-xs">
-                            <RiErrorWarningFill className="mr-2 text-lg" />
+                        <p className="text-red-500 text-xs mt-1 flex items-center">
+                            <RiErrorWarningFill className="mr-1" />{" "}
                             {errors.email}
-                        </div>
+                        </p>
                     )}
                 </div>
 
-                {/* Password Input */}
+                {/* Password */}
                 <div className="relative">
                     <input
                         id="password"
@@ -179,12 +190,56 @@ const SignUp = () => {
                         )}
                     </button>
 
+                    {/* Instruction */}
+                    {!errors.password && (
+                        <p className="text-slate-400 text-[10px] mt-1 ml-1">
+                            Must be at least 6 characters
+                        </p>
+                    )}
+
                     {/* Error */}
                     {errors.password && (
-                        <div className="flex items-center mt-2 p-2 rounded-lg bg-red-100 border border-red-200 text-red-600 text-xs">
-                            <RiErrorWarningFill className="mr-2 text-lg" />
+                        <p className="text-red-500 text-xs mt-1 flex items-center">
+                            <RiErrorWarningFill className="mr-1" />{" "}
                             {errors.password}
-                        </div>
+                        </p>
+                    )}
+                </div>
+
+                {/* Confirm Password */}
+                <div className="relative">
+                    <input
+                        id="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        className="peer w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm placeholder-transparent pr-12"
+                        placeholder="Re-enter password"
+                    />
+                    <label
+                        htmlFor="confirmPassword"
+                        className="absolute left-4 -top-2.5 bg-white px-1 text-xs font-medium text-slate-600 transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:top-3 peer-placeholder-shown:text-slate-400 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-primary">
+                        Confirm Password
+                    </label>
+                    <button
+                        type="button"
+                        onClick={() =>
+                            setShowConfirmPassword(!showConfirmPassword)
+                        }
+                        className="absolute right-4 top-3 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
+                        {showConfirmPassword ? (
+                            <RiEyeOffLine size={20} />
+                        ) : (
+                            <RiEyeLine size={20} />
+                        )}
+                    </button>
+
+                    {/* Error */}
+                    {errors.confirmPassword && (
+                        <p className="text-red-500 text-xs mt-1 flex items-center">
+                            <RiErrorWarningFill className="mr-1" />{" "}
+                            {errors.confirmPassword}
+                        </p>
                     )}
                 </div>
 
