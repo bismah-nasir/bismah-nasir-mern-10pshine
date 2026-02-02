@@ -13,8 +13,8 @@ const Home = () => {
     const [userInfo, setUserInfo] = useState(null);
     const [notes, setNotes] = useState([]);
     const [filteredNotes, setFilteredNotes] = useState([]);
+    const [sortType, setSortType] = useState("updated"); // 'updated' or 'created'
     const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState("");
     const [deleteModal, setDeleteModal] = useState({
         isOpen: false,
         noteId: null,
@@ -36,7 +36,30 @@ const Home = () => {
         }
     }, [navigate]);
 
-    // 2. Fetch Notes from API
+    // 2. Sort Notes
+    const sortNotes = (notesList, type) => {
+        return [...notesList].sort((a, b) => {
+            // Priority 1: Pinned notes always on top
+            if (a.isPinned !== b.isPinned) {
+                return a.isPinned ? -1 : 1;
+            }
+
+            // Priority 2: Sort based on selected type
+            const dateA =
+                type === "created"
+                    ? new Date(a.createdAt)
+                    : new Date(a.updatedAt);
+            const dateB =
+                type === "created"
+                    ? new Date(b.createdAt)
+                    : new Date(b.updatedAt);
+
+            // Descending order (Newest first)
+            return dateB - dateA;
+        });
+    };
+
+    // 3. Fetch Notes from API
     const fetchNotes = async () => {
         try {
             // Get token directly from local storage to ensure it's available immediately
@@ -57,8 +80,9 @@ const Home = () => {
 
             if (res.ok) {
                 // Success! Even if data is [] (empty array), res.ok is true
-                setNotes(data);
-                setFilteredNotes(data);
+                const sortedData = sortNotes(data, sortType);
+                setNotes(sortedData);
+                setFilteredNotes(sortedData);
             } else {
                 toast.error(data.message || "Failed to fetch notes");
             }
@@ -70,21 +94,31 @@ const Home = () => {
         }
     };
 
-    // 3. Search Logic
+    // 4. Search Logic
     const handleSearch = (query) => {
         if (!query) {
-            setFilteredNotes(notes);
+            setFilteredNotes(sortNotes(notes, sortType));
         } else {
             const filtered = notes.filter(
                 (note) =>
                     note.title.toLowerCase().includes(query.toLowerCase()) ||
                     note.content.toLowerCase().includes(query.toLowerCase()),
             );
-            setFilteredNotes(filtered);
+            setFilteredNotes(sortNotes(filtered, sortType));
         }
     };
 
-    // 4. Delete Logic
+    // Handle Sort Change
+    const handleSort = (e) => {
+        const type = e.target.value;
+        setSortType(type);
+
+        // Re-sort current view
+        setNotes(sortNotes(notes, type));
+        setFilteredNotes(sortNotes(filteredNotes, type));
+    };
+
+    // 5. Delete Logic
     const openDeleteModal = (noteId) => {
         setDeleteModal({ isOpen: true, noteId });
     };
@@ -121,7 +155,7 @@ const Home = () => {
         }
     };
 
-    // 4. Create Logic
+    // 6. Create/Edit Logic
     // Click "New Note" button
     const handleCreateNote = () => {
         setOpenEditor({ isOpen: true, note: null });
@@ -132,6 +166,7 @@ const Home = () => {
         setOpenEditor({ isOpen: true, note: note });
     };
 
+    // 7. Pin/Unpin Logic
     const updateIsPinned = async (note) => {
         try {
             const user = JSON.parse(localStorage.getItem("userInfo"));
@@ -149,14 +184,7 @@ const Home = () => {
 
             if (res.ok) {
                 toast.success(data.isPinned ? "Note Pinned" : "Note Unpinned");
-
-                // Update UI instantly without reloading
-                setNotes((prev) =>
-                    prev.map((n) => (n._id === note._id ? data : n)),
-                );
-                setFilteredNotes((prev) =>
-                    prev.map((n) => (n._id === note._id ? data : n)),
-                );
+                fetchNotes();
             } else {
                 toast.error("Failed to update");
             }
@@ -186,9 +214,13 @@ const Home = () => {
                     </div>
 
                     <div className="flex items-center gap-4">
+                        {/* Sort Dropdown */}
                         <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2">
                             <RiSortDesc className="text-slate-400" />
-                            <select className="text-sm text-slate-700 bg-transparent border-none outline-none cursor-pointer">
+                            <select
+                                onChange={handleSort}
+                                value={sortType}
+                                className="text-sm text-slate-700 bg-transparent border-none outline-none cursor-pointer">
                                 <option value="updated">Last Updated</option>
                                 <option value="created">Date Created</option>
                             </select>

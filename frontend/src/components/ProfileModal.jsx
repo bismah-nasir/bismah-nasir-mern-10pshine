@@ -18,10 +18,22 @@ const ProfileModal = ({ isOpen, onClose, userInfo }) => {
 
     // Reset state when modal opens/closes
     useEffect(() => {
-        if (!isOpen) {
+        if (isOpen) {
+            // Disable scroll on body when modal opens
+            document.body.style.overflow = "hidden";
+        } else {
+            // Re-enable scroll when modal closes
+            document.body.style.overflow = "unset";
+
+            // Reset internal state
             setIsChangingPassword(false);
             setPasswords({ newPassword: "", confirmPassword: "" });
         }
+
+        // Cleanup function to ensure scroll is restored if component unmounts
+        return () => {
+            document.body.style.overflow = "unset";
+        };
     }, [isOpen]);
 
     const handlePasswordUpdate = async () => {
@@ -105,7 +117,7 @@ const ProfileModal = ({ isOpen, onClose, userInfo }) => {
                 </div>
 
                 {/* Form Content */}
-                <div className="px-8 py-8 space-y-5">
+                <div className="px-8 py-6 space-y-6">
                     {/* Read-Only Fields */}
                     <div className="space-y-4">
                         <div className="space-y-1">
@@ -143,7 +155,7 @@ const ProfileModal = ({ isOpen, onClose, userInfo }) => {
                         </div>
                     </div>
 
-                    <div className="border-t border-slate-100 pt-5"></div>
+                    <div className="border-t border-slate-100"></div>
 
                     {/* Password Section */}
                     <div>
@@ -183,7 +195,7 @@ const ProfileModal = ({ isOpen, onClose, userInfo }) => {
                                     <input
                                         type="password"
                                         className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                                        placeholder="Min 6 characters"
+                                        placeholder="Enter password"
                                         value={passwords.newPassword}
                                         onChange={(e) =>
                                             setPasswords({

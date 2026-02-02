@@ -72,7 +72,7 @@ const LinkInput = ({ editor, isOpen, onClose }) => {
     };
 
     return (
-        <div className="absolute top-full mt-2 left-0 z-50 bg-white border border-slate-200 shadow-xl rounded-lg p-2 flex items-center gap-2 w-64 animate-in fade-in zoom-in-95 duration-200">
+        <div className="absolute top-full mt-2 right-0 z-50 bg-white border border-slate-200 shadow-xl rounded-lg p-2 flex items-center gap-2 w-64 animate-in fade-in zoom-in-95 duration-200">
             <input
                 type="url"
                 value={url}
@@ -89,7 +89,7 @@ const LinkInput = ({ editor, isOpen, onClose }) => {
             </button>
             <button
                 onClick={onClose}
-                className="p-1 text-slate-500 hover:bg-slate-100 rounded">
+                className="p-1 bg-slate-50 text-slate-500 rounded hover:bg-slate-100">
                 <RiCloseLine />
             </button>
         </div>
@@ -102,6 +102,34 @@ const NoteModal = ({ isOpen, onClose, note, refreshNotes }) => {
     const [tagInput, setTagInput] = useState("");
     const [loading, setLoading] = useState(false);
     const [showLinkInput, setShowLinkInput] = useState(false);
+
+    // Browser Back Button & Scroll Lock Logic
+    useEffect(() => {
+        if (isOpen) {
+            // Push state to history
+            window.history.pushState({ modalOpen: true }, "");
+            // Lock Scroll
+            document.body.style.overflow = "hidden";
+
+            const handlePopState = () => {
+                // If user hits back button, close modal
+                onClose();
+            };
+
+            window.addEventListener("popstate", handlePopState);
+
+            return () => {
+                window.removeEventListener("popstate", handlePopState);
+                document.body.style.overflow = "unset";
+            };
+        }
+    }, [isOpen, onClose]);
+
+    // Wrapper to close modal and fix history
+    const handleClose = () => {
+        // Go back in history to remove the pushed state, this triggers the popstate listener which calls onClose
+        window.history.back();
+    };
 
     // Initialize Editor
     const editor = useEditor({
@@ -237,7 +265,7 @@ const NoteModal = ({ isOpen, onClose, note, refreshNotes }) => {
             if (res.ok) {
                 toast.success(note ? "Note Updated" : "Note Created");
                 refreshNotes();
-                onClose();
+                handleClose();
             } else {
                 toast.error(data.message || "Something went wrong");
             }
@@ -258,7 +286,7 @@ const NoteModal = ({ isOpen, onClose, note, refreshNotes }) => {
                     <div className="flex items-center justify-between h-16">
                         <div className="flex items-center gap-4">
                             <button
-                                onClick={onClose}
+                                onClick={handleClose}
                                 className="p-2 text-slate-600 hover:text-slate-850 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer">
                                 <RiArrowLeftLine className="text-xl" />
                             </button>
@@ -268,15 +296,15 @@ const NoteModal = ({ isOpen, onClose, note, refreshNotes }) => {
                         </div>
                         <div className="flex items-center gap-3">
                             <button
-                                onClick={onClose}
-                                className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200 whitespace-nowrap cursor-pointer">
+                                onClick={handleClose}
+                                className="px-6 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200 whitespace-nowrap cursor-pointer">
                                 Cancel
                             </button>
                             <button
                                 onClick={handleSave}
                                 disabled={loading}
                                 className="px-6 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-dark rounded-lg transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap cursor-pointer">
-                                <RiSaveLine />
+                                <RiSaveLine className="text-lg" />
                                 {loading ? "Saving..." : "Save Note"}
                             </button>
                         </div>
@@ -428,7 +456,7 @@ const NoteModal = ({ isOpen, onClose, note, refreshNotes }) => {
                                     }
                                     isActive={editorState.isH2}
                                     label="Heading 2">
-                                    <RiH2 className="text-lg" f />
+                                    <RiH2 className="text-lg" />
                                 </MenuButton>
 
                                 {/* Heading 3 */}

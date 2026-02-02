@@ -12,8 +12,15 @@ import {
 const NoteCard = ({ note, onDelete, onEdit, onPin }) => {
     const [showMenu, setShowMenu] = useState(false);
 
+    // Logic: Determine if note is newly created or updated
+    const isUpdated =
+        new Date(note.updatedAt).getTime() >
+        new Date(note.createdAt).getTime() + 1000;
+    const dateDisplay = isUpdated ? note.updatedAt : note.createdAt;
+    const labelDisplay = isUpdated ? "Updated" : "Created";
+
     return (
-        <div className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-200 cursor-pointer group relative">
+        <div className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-lg hover:border-primary/30 transition-all duration-200 group relative">
             {/* Header: Title & Menu */}
             <div className="flex items-start justify-between mb-3">
                 <h3 className="text-lg font-semibold text-slate-850 group-hover:text-primary transition-colors line-clamp-1 flex-1 pr-2">
@@ -54,17 +61,36 @@ const NoteCard = ({ note, onDelete, onEdit, onPin }) => {
                             <>
                                 <div
                                     className="fixed inset-0 z-10"
-                                    onClick={() => setShowMenu(false)}></div>
-                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-20">
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowMenu(false);
+                                    }}></div>
+
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-slate-200 p-1 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+                                    {/* Edit Button */}
                                     <button
-                                        onClick={() => onEdit(note)}
-                                        className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-3 cursor-pointer">
-                                        <RiEditLine /> Edit Note
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onEdit(note);
+                                            setShowMenu(false);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 rounded-lg flex items-center gap-2 cursor-pointer transition-colors">
+                                        <RiEditLine className="text-lg text-slate-500" />
+                                        Edit Note
                                     </button>
+
+                                    <div className="border-t border-slate-100 my-1 mx-2"></div>
+
+                                    {/* Delete Button */}
                                     <button
-                                        onClick={() => onDelete(note._id)}
-                                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 cursor-pointer">
-                                        <RiDeleteBinLine /> Delete Note
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDelete(note._id);
+                                            setShowMenu(false);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2 cursor-pointer transition-colors">
+                                        <RiDeleteBinLine className="text-lg" />
+                                        Delete Note
                                     </button>
                                 </div>
                             </>
@@ -89,8 +115,8 @@ const NoteCard = ({ note, onDelete, onEdit, onPin }) => {
                 <div className="flex items-center gap-2 text-xs text-slate-500">
                     <RiTimeLine className="text-[13px]" />
                     <span>
-                        Updated{" "}
-                        {format(new Date(note.updatedAt), "MMM d, yyyy")}
+                        {labelDisplay}{" "}
+                        {format(new Date(dateDisplay), "MMM d, yyyy")}
                     </span>
                 </div>
                 <div className="flex items-center gap-1">
