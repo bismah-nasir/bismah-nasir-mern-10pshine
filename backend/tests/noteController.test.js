@@ -5,7 +5,7 @@ const noteController = require("../controllers/noteController");
 const logger = require("../config/logger");
 
 describe("Note Controller - Unit Tests", () => {
-    let req, res, sandbox;
+    let req, res, next, sandbox;
 
     beforeEach(() => {
         sandbox = sinon.createSandbox();
@@ -20,6 +20,9 @@ describe("Note Controller - Unit Tests", () => {
             status: sandbox.stub().returnsThis(),
             json: sandbox.spy(),
         };
+
+        // Mock the 'next' function to catch errors passed to middleware
+        next = sandbox.spy();
 
         sandbox.stub(logger, "info");
         sandbox.stub(logger, "error");
@@ -44,22 +47,22 @@ describe("Note Controller - Unit Tests", () => {
             const sortStub = sandbox.stub().resolves(mockNotes);
             sandbox.stub(Note, "find").returns({ sort: sortStub });
 
-            await noteController.getNotes(req, res);
+            await noteController.getNotes(req, res, next);
 
             expect(res.status.calledWith(200)).to.be.true;
             expect(res.json.calledWith(mockNotes)).to.be.true;
         });
 
-        it("should handle server errors (500)", async () => {
+        it("should handle server errors (Next)", async () => {
             // Force the chain to fail
-            const sortStub = sandbox.stub().rejects(new Error("DB Error"));
+            const error = new Error("DB Error");
+            const sortStub = sandbox.stub().rejects(error);
             sandbox.stub(Note, "find").returns({ sort: sortStub });
 
-            await noteController.getNotes(req, res);
+            await noteController.getNotes(req, res, next);
 
-            expect(res.status.calledWith(500)).to.be.true;
-            expect(res.json.calledWithMatch({ message: "Server Error" })).to.be
-                .true;
+            // Expect error to be passed to Global Middleware
+            expect(next.calledWith(error)).to.be.true;
         });
     });
 
@@ -79,7 +82,7 @@ describe("Note Controller - Unit Tests", () => {
 
             sandbox.stub(Note, "create").resolves(mockSavedNote);
 
-            await noteController.createNote(req, res);
+            await noteController.createNote(req, res, next);
 
             expect(res.status.calledWith(200)).to.be.true;
             expect(res.json.calledWith(mockSavedNote)).to.be.true;
@@ -88,23 +91,25 @@ describe("Note Controller - Unit Tests", () => {
         it("should fail if title/content is missing (400)", async () => {
             req.body = { content: "Content without title" };
 
-            await noteController.createNote(req, res);
+            await noteController.createNote(req, res, next);
 
+            // Controller logic: res.status(400); throw new Error(...)
             expect(res.status.calledWith(400)).to.be.true;
-            expect(
-                res.json.calledWithMatch({
-                    message: "Please add a title and content",
-                }),
-            ).to.be.true;
+            expect(next.calledWithMatch(sinon.match.instanceOf(Error))).to.be
+                .true;
+            expect(next.args[0][0].message).to.equal(
+                "Please add a title and content",
+            );
         });
 
-        it("should handle server errors (500)", async () => {
+        it("should handle server errors (Next)", async () => {
             req.body = { title: "Test", content: "Test" };
-            sandbox.stub(Note, "create").rejects(new Error("DB Error"));
+            const error = new Error("DB Error");
+            sandbox.stub(Note, "create").rejects(error);
 
-            await noteController.createNote(req, res);
+            await noteController.createNote(req, res, next);
 
-            expect(res.status.calledWith(500)).to.be.true;
+            expect(next.calledWith(error)).to.be.true;
         });
     });
 
@@ -127,7 +132,7 @@ describe("Note Controller - Unit Tests", () => {
             const updatedMock = { ...mockNote, title: "Updated Title" };
             sandbox.stub(Note, "findByIdAndUpdate").resolves(updatedMock);
 
-            await noteController.updateNote(req, res);
+            await noteController.updateNote(req, res, next);
 
             expect(res.status.calledWith(200)).to.be.true;
             expect(res.json.calledWith(updatedMock)).to.be.true;
@@ -137,11 +142,13 @@ describe("Note Controller - Unit Tests", () => {
             req.params.id = "missing_id";
             sandbox.stub(Note, "findById").resolves(null);
 
-            await noteController.updateNote(req, res);
+            await noteController.updateNote(req, res, next);
 
+            // Controller logic: res.status(404); throw new Error(...)
             expect(res.status.calledWith(404)).to.be.true;
-            expect(res.json.calledWithMatch({ message: "Note not found" })).to
-                .be.true;
+            expect(next.calledWithMatch(sinon.match.instanceOf(Error))).to.be
+                .true;
+            expect(next.args[0][0].message).to.equal("Note not found");
         });
 
         it("should return 401 if user does not own note", async () => {
@@ -152,20 +159,23 @@ describe("Note Controller - Unit Tests", () => {
             };
             sandbox.stub(Note, "findById").resolves(mockNote);
 
-            await noteController.updateNote(req, res);
+            await noteController.updateNote(req, res, next);
 
+            // Controller logic: res.status(401); throw new Error(...)
             expect(res.status.calledWith(401)).to.be.true;
-            expect(res.json.calledWithMatch({ message: "User not authorized" }))
-                .to.be.true;
+            expect(next.calledWithMatch(sinon.match.instanceOf(Error))).to.be
+                .true;
+            expect(next.args[0][0].message).to.equal("User not authorized");
         });
 
-        it("should handle server errors (500)", async () => {
+        it("should handle server errors (Next)", async () => {
             req.params.id = "note_id_999";
-            sandbox.stub(Note, "findById").rejects(new Error("DB Fail"));
+            const error = new Error("DB Fail");
+            sandbox.stub(Note, "findById").rejects(error);
 
-            await noteController.updateNote(req, res);
+            await noteController.updateNote(req, res, next);
 
-            expect(res.status.calledWith(500)).to.be.true;
+            expect(next.calledWith(error)).to.be.true;
         });
     });
 
@@ -184,7 +194,7 @@ describe("Note Controller - Unit Tests", () => {
 
             sandbox.stub(Note, "findById").resolves(mockNote);
 
-            await noteController.deleteNote(req, res);
+            await noteController.deleteNote(req, res, next);
 
             expect(res.status.calledWith(200)).to.be.true;
             // Verify deleteOne was called
@@ -195,9 +205,12 @@ describe("Note Controller - Unit Tests", () => {
             req.params.id = "missing_id";
             sandbox.stub(Note, "findById").resolves(null);
 
-            await noteController.deleteNote(req, res);
+            await noteController.deleteNote(req, res, next);
 
             expect(res.status.calledWith(404)).to.be.true;
+            expect(next.calledWithMatch(sinon.match.instanceOf(Error))).to.be
+                .true;
+            expect(next.args[0][0].message).to.equal("Note not found");
         });
 
         it("should return 401 if user does not own note", async () => {
@@ -210,18 +223,22 @@ describe("Note Controller - Unit Tests", () => {
 
             sandbox.stub(Note, "findById").resolves(mockNote);
 
-            await noteController.deleteNote(req, res);
+            await noteController.deleteNote(req, res, next);
 
             expect(res.status.calledWith(401)).to.be.true;
+            expect(next.calledWithMatch(sinon.match.instanceOf(Error))).to.be
+                .true;
+            expect(next.args[0][0].message).to.equal("User not authorized");
         });
 
-        it("should handle server errors (500)", async () => {
+        it("should handle server errors (Next)", async () => {
             req.params.id = "note_id_999";
-            sandbox.stub(Note, "findById").rejects(new Error("DB Fail"));
+            const error = new Error("DB Fail");
+            sandbox.stub(Note, "findById").rejects(error);
 
-            await noteController.deleteNote(req, res);
+            await noteController.deleteNote(req, res, next);
 
-            expect(res.status.calledWith(500)).to.be.true;
+            expect(next.calledWith(error)).to.be.true;
         });
     });
 });

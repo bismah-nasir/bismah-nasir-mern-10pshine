@@ -8,15 +8,15 @@ const sendEmailUtils = require("../utils/sendEmail");
 // @desc    Register new user
 // @route   POST /api/users/register
 // @access  Public
-const registerUser = async (req, res) => {
+const registerUser = async (req, res, next) => {
     const { username, email, password } = req.body;
 
     try {
         // 1. Check if user exists
         const userExists = await User.findOne({ email });
         if (userExists) {
-            logger.warn(`Register failed: Email ${email} already exists`);
-            return res.status(400).json({ message: "User already exists" });
+            res.status(400);
+            throw new Error("User already exists");
         }
 
         // 2. Hash password
@@ -40,19 +40,18 @@ const registerUser = async (req, res) => {
                 token: generateToken(user._id),
             });
         } else {
-            logger.warn("Invalid user data received");
-            res.status(400).json({ message: "Invalid user data" });
+            res.status(400);
+            throw new Error("Invalid user data");
         }
     } catch (error) {
-        logger.error(`Register Error: ${error.message}`);
-        res.status(500).json({ message: error.message });
+        next(error);
     }
 };
 
 // @desc    Authenticate a user
 // @route   POST /api/users/login
 // @access  Public
-const loginUser = async (req, res) => {
+const loginUser = async (req, res, next) => {
     const { email, password } = req.body;
 
     try {
@@ -69,19 +68,18 @@ const loginUser = async (req, res) => {
                 token: generateToken(user._id),
             });
         } else {
-            logger.warn(`Login failed: Invalid creds for ${email}`);
-            res.status(401).json({ message: "Invalid credentials" });
+            res.status(401);
+            throw new Error("Invalid credentials");
         }
     } catch (error) {
-        logger.error(`Login Error: ${error.message}`);
-        res.status(500).json({ message: error.message });
+        next(error);
     }
 };
 
 // @desc    Update user profile (Password only for now)
 // @route   PUT /api/users/profile
 // @access  Private
-const updateUserProfile = async (req, res) => {
+const updateUserProfile = async (req, res, next) => {
     try {
         // req.user.id comes from the 'protect' middleware
         const user = await User.findById(req.user.id);
@@ -105,25 +103,26 @@ const updateUserProfile = async (req, res) => {
                 token: generateToken(updatedUser._id),
             });
         } else {
-            res.status(404).json({ message: "User not found" });
+            res.status(404);
+            throw new Error("User not found");
         }
     } catch (error) {
-        logger.error(`Update Profile Error: ${error.message}`);
-        res.status(500).json({ message: error.message });
+        next(error);
     }
 };
 
 // @desc    Forgot Password - Send Email
 // @route   POST /api/users/forgot-password
 // @access  Public
-const forgotPassword = async (req, res) => {
+const forgotPassword = async (req, res, next) => {
     const { email } = req.body;
 
     try {
         const user = await User.findOne({ email });
 
         if (!user) {
-            return res.status(404).json({ message: "User not found" });
+            res.status(404);
+            throw new Error("User not found");
         }
 
         // 1. Generate Reset Token
@@ -160,19 +159,18 @@ const forgotPassword = async (req, res) => {
             user.resetPasswordExpire = undefined;
             await user.save();
 
-            logger.error(`Email send failed: ${error.message}`);
-            return res.status(500).json({ message: "Email could not be sent" });
+            res.status(500);
+            throw new Error("Email could not be sent");
         }
     } catch (error) {
-        logger.error(`Forgot Password Error: ${error.message}`);
-        res.status(500).json({ message: error.message });
+        next(error);
     }
 };
 
 // @desc    Reset Password
 // @route   POST /api/users/reset-password/:resetToken
 // @access  Public
-const resetPassword = async (req, res) => {
+const resetPassword = async (req, res, next) => {
     try {
         // 1. Hash the token from URL to compare with DB
         const resetPasswordToken = crypto
@@ -187,9 +185,8 @@ const resetPassword = async (req, res) => {
         });
 
         if (!user) {
-            return res
-                .status(400)
-                .json({ message: "Invalid or expired token" });
+            res.status(400);
+            throw new Error("Invalid or expired token");
         }
 
         // 3. Set new password
@@ -197,7 +194,8 @@ const resetPassword = async (req, res) => {
             const salt = await bcrypt.genSalt(10);
             user.password = await bcrypt.hash(req.body.password, salt);
         } else {
-            return res.status(400).json({ message: "Password is required" });
+            res.status(400);
+            throw new Error("Password is required");
         }
 
         // 4. Clear reset fields
@@ -212,8 +210,7 @@ const resetPassword = async (req, res) => {
             data: "Password Updated Success",
         });
     } catch (error) {
-        logger.error(`Reset Password Error: ${error.message}`);
-        res.status(500).json({ message: error.message });
+        next(error);
     }
 };
 

@@ -4,7 +4,7 @@ const logger = require("../config/logger");
 // @desc    Get all notes for the logged-in user
 // @route   GET /api/notes
 // @access  Private
-const getNotes = async (req, res) => {
+const getNotes = async (req, res, next) => {
     try {
         // Sort by pinned first, then by creation date (newest first)
         const notes = await Note.find({ user: req.user.id }).sort({
@@ -17,27 +17,22 @@ const getNotes = async (req, res) => {
 
         res.status(200).json(notes);
     } catch (error) {
-        logger.error(`Error fetching notes: ${error.message}`);
-        res.status(500).json({ message: "Server Error" });
+        next(error);
     }
 };
 
 // @desc    Create a new note
 // @route   POST /api/notes
 // @access  Private
-const createNote = async (req, res) => {
+const createNote = async (req, res, next) => {
     const { title, content, category, tags, isPinned, isArchived } = req.body;
 
-    if (!title || !content) {
-        logger.warn(
-            `User ${req.user.id} tried to create note without title/content`,
-        );
-        return res
-            .status(400)
-            .json({ message: "Please add a title and content" });
-    }
-
     try {
+        if (!title || !content) {
+            res.status(400);
+            throw new Error("Please add a title and content");
+        }
+
         const note = await Note.create({
             user: req.user.id,
             title,
@@ -53,29 +48,26 @@ const createNote = async (req, res) => {
         );
         res.status(200).json(note);
     } catch (error) {
-        logger.error(`Error creating note: ${error.message}`);
-        res.status(500).json({ message: "Server Error" });
+        next(error);
     }
 };
 
 // @desc    Update a note
 // @route   PUT /api/notes/:id
 // @access  Private
-const updateNote = async (req, res) => {
+const updateNote = async (req, res, next) => {
     try {
         const note = await Note.findById(req.params.id);
 
         if (!note) {
-            logger.warn(`Update failed: Note ${req.params.id} not found`);
-            return res.status(404).json({ message: "Note not found" });
+            res.status(404);
+            throw new Error("Note not found");
         }
 
         // Check if user owns the note
         if (note.user.toString() !== req.user.id) {
-            logger.warn(
-                `Unauthorized update attempt on Note ${note._id} by User ${req.user.id}`,
-            );
-            return res.status(401).json({ message: "User not authorized" });
+            res.status(401);
+            throw new Error("User not authorized");
         }
 
         const updatedNote = await Note.findByIdAndUpdate(
@@ -89,28 +81,26 @@ const updateNote = async (req, res) => {
         logger.info(`Note updated: ${updatedNote._id}`);
         res.status(200).json(updatedNote);
     } catch (error) {
-        logger.error(`Error updating note: ${error.message}`);
-        res.status(500).json({ message: "Server Error" });
+        next(error);
     }
 };
 
 // @desc    Delete a note
 // @route   DELETE /api/notes/:id
 // @access  Private
-const deleteNote = async (req, res) => {
+const deleteNote = async (req, res, next) => {
     try {
         const note = await Note.findById(req.params.id);
 
         if (!note) {
-            return res.status(404).json({ message: "Note not found" });
+            res.status(404);
+            throw new Error("Note not found");
         }
 
         // Check if user owns the note
         if (note.user.toString() !== req.user.id) {
-            logger.warn(
-                `Unauthorized delete attempt on Note ${note._id} by User ${req.user.id}`,
-            );
-            return res.status(401).json({ message: "User not authorized" });
+            res.status(401);
+            throw new Error("User not authorized");
         }
 
         await note.deleteOne();
@@ -118,8 +108,7 @@ const deleteNote = async (req, res) => {
         logger.info(`Note deleted: ${req.params.id}`);
         res.status(200).json({ id: req.params.id });
     } catch (error) {
-        logger.error(`Error deleting note: ${error.message}`);
-        res.status(500).json({ message: "Server Error" });
+        next(error);
     }
 };
 
