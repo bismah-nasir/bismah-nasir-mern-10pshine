@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const User = require("../models/User");
 const logger = require("../config/logger");
-const sendEmail = require("../utils/sendEmail");
+const sendEmailUtils = require("../utils/sendEmail");
 
 // @desc    Register new user
 // @route   POST /api/users/register
@@ -146,7 +146,7 @@ const forgotPassword = async (req, res) => {
         const message = `You requested a password reset. Please click the link below to create a new password:\n\n${resetUrl}`;
 
         try {
-            await sendEmail({
+            await sendEmailUtils.sendEmail({
                 email: user.email,
                 subject: "Password Reset Request",
                 message,
