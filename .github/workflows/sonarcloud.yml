@@ -1,0 +1,54 @@
+name: SonarCloud Analysis
+
+on:
+    push:
+        branches:
+            - main
+            - develop
+    pull_request:
+        types: [opened, synchronize, reopened]
+
+jobs:
+    sonarcloud:
+        name: SonarCloud Scan
+        runs-on: ubuntu-latest
+
+        steps:
+            # 1. Checkout Code
+            - uses: actions/checkout@v3
+              with:
+                  fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+
+            # 2. Setup Node.js
+            - name: Install Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 18
+
+            # 3. Install & Test Frontend (Generate Coverage)
+            - name: Frontend - Install & Test
+              working-directory: ./frontend
+              run: |
+                  npm install
+                  npm run coverage
+
+            # 4. Install & Test Backend (Generate Coverage)
+            - name: Backend - Install & Test
+              working-directory: ./backend
+              run: |
+                  npm install
+                  npm test
+
+            # 5. Fix Paths in Coverage Reports (Crucial for Monorepos)
+            # SonarCloud sometimes gets confused by relative paths in 'lcov.info'. This fixes it.
+            - name: Fix Coverage Paths
+              run: |
+                  sed -i 's|SF:src/|SF:frontend/src/|g' frontend/coverage/lcov.info
+                  # Backend usually works fine, but check if needed later.
+
+            # 6. Run SonarCloud Scan
+            - name: SonarCloud Scan
+              uses: SonarSource/sonarcloud-github-action@master
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

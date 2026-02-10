@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "main": "index.js",
     "scripts": {
-        "test": "mocha tests/**/*.test.js --exit"
+        "test": "nyc --reporter=lcov --reporter=text mocha tests/**/*.test.js --exit"
     },
     "keywords": [],
     "author": "",
@@ -24,6 +24,7 @@
     "devDependencies": {
         "chai": "^4.3.10",
         "mocha": "^11.7.5",
+        "nyc": "^17.1.0",
         "sinon": "^21.0.1"
     }
 }
