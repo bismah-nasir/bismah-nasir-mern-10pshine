@@ -43,8 +43,8 @@ jobs:
             # SonarCloud sometimes gets confused by relative paths in 'lcov.info'. This fixes it.
             - name: Fix Coverage Paths
               run: |
-                  sed -i 's|SF:src/|SF:frontend/src/|g' frontend/coverage/lcov.info
-                  sed -i -E 's|SF:(controllers|models|routes|middleware|utils|config)/|SF:backend/\1/|g' backend/coverage/lcov.info
+                  sed -i 's#SF:src/#SF:frontend/src/#g' frontend/coverage/lcov.info
+                  sed -i -E 's#SF:(controllers|models|routes|middleware|utils|config)/#SF:backend/\1/#g' backend/coverage/lcov.info
 
             # 6. Run SonarCloud Scan
             - name: SonarCloud Scan
