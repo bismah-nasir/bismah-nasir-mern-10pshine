@@ -44,7 +44,7 @@ jobs:
             - name: Fix Coverage Paths
               run: |
                   sed -i 's|SF:src/|SF:frontend/src/|g' frontend/coverage/lcov.info
-                  # Backend usually works fine, but check if needed later.
+                  sed -i -E 's|SF:(controllers|models|routes|middleware|utils|config)/|SF:backend/\1/|g' backend/coverage/lcov.info
 
             # 6. Run SonarCloud Scan
             - name: SonarCloud Scan
