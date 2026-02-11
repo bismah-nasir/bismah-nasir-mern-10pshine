@@ -28,11 +28,11 @@ const Home = () => {
     // 1. Check Auth & Load User
     useEffect(() => {
         const user = localStorage.getItem("userInfo");
-        if (!user) {
-            navigate("/login");
-        } else {
+        if (user) {
             setUserInfo(JSON.parse(user));
             fetchNotes(); // Load notes once user is confirmed
+        } else {
+            navigate("/login");
         }
     }, [navigate]);
 
@@ -87,7 +87,7 @@ const Home = () => {
                 toast.error(data.message || "Failed to fetch notes");
             }
         } catch (error) {
-            console.error(error);
+            console.error("Fetch notes error:", error);
             toast.error("Server error");
         } finally {
             setLoading(false);
@@ -149,6 +149,7 @@ const Home = () => {
                 toast.error("Failed to delete");
             }
         } catch (error) {
+            console.error("Delete note error:", error);
             toast.error("Delete failed");
         } finally {
             setIsDeleting(false);
@@ -189,6 +190,7 @@ const Home = () => {
                 toast.error("Failed to update");
             }
         } catch (error) {
+            console.error("Update pin error:", error);
             toast.error("Server error");
         }
     };
