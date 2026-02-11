@@ -12,8 +12,11 @@ const registerUser = async (req, res, next) => {
     const { username, email, password } = req.body;
 
     try {
+        const cleanEmail = String(email);
+        const cleanUsername = String(username);
+
         // 1. Check if user exists
-        const userExists = await User.findOne({ email });
+        const userExists = await User.findOne({ email: cleanEmail });
         if (userExists) {
             res.status(400);
             throw new Error("User already exists");
@@ -25,8 +28,8 @@ const registerUser = async (req, res, next) => {
 
         // 3. Create user
         const user = await User.create({
-            username,
-            email,
+            username: cleanUsername,
+            email: cleanEmail,
             password: hashedPassword,
         });
 
@@ -56,7 +59,7 @@ const loginUser = async (req, res, next) => {
 
     try {
         // 1. Check for user email
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email: String(email) });
 
         // 2. Check password
         if (user && (await bcrypt.compare(password, user.password))) {
@@ -118,7 +121,7 @@ const forgotPassword = async (req, res, next) => {
     const { email } = req.body;
 
     try {
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email: String(email) });
 
         if (!user) {
             res.status(404);
@@ -154,9 +157,12 @@ const forgotPassword = async (req, res, next) => {
             logger.info(`Password reset email sent to: ${email}`);
             res.status(200).json({ success: true, data: "Email sent" });
         } catch (error) {
+            logger.error(`Email send failed: ${error.message}`);
+
             // If email fails, clear the fields
             user.resetPasswordToken = undefined;
             user.resetPasswordExpire = undefined;
+            
             await user.save();
 
             res.status(500);
