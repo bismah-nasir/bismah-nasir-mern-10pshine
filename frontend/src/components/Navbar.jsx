@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
 import {
     RiSearchLine,
@@ -142,6 +143,14 @@ const Navbar = ({ userInfo, onSearch }) => {
             />
         </>
     );
+};
+
+Navbar.propTypes = {
+    userInfo: PropTypes.shape({
+        username: PropTypes.string,
+        email: PropTypes.string,
+    }),
+    onSearch: PropTypes.func.isRequired,
 };
 
 export default Navbar;
