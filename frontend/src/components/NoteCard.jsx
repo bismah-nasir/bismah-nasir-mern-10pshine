@@ -1,4 +1,5 @@
 import { useState } from "react";
+import PropTypes from "prop-types";
 import { format } from "date-fns";
 import {
     RiMore2Fill,
@@ -137,6 +138,21 @@ const NoteCard = ({ note, onDelete, onEdit, onPin }) => {
             </div>
         </div>
     );
+};
+
+NoteCard.propTypes = {
+    note: PropTypes.shape({
+        _id: PropTypes.string.isRequired,
+        title: PropTypes.string.isRequired,
+        content: PropTypes.string,
+        tags: PropTypes.arrayOf(PropTypes.string),
+        isPinned: PropTypes.bool,
+        createdAt: PropTypes.string.isRequired,
+        updatedAt: PropTypes.string.isRequired,
+    }).isRequired,
+    onDelete: PropTypes.func.isRequired,
+    onEdit: PropTypes.func.isRequired,
+    onPin: PropTypes.func.isRequired,
 };
 
 export default NoteCard;
