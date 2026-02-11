@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import { RiErrorWarningLine } from "react-icons/ri";
 
 const DeleteModal = ({ isOpen, onClose, onConfirm, loading }) => {
@@ -40,6 +41,13 @@ const DeleteModal = ({ isOpen, onClose, onConfirm, loading }) => {
             </div>
         </div>
     );
+};
+
+DeleteModal.propTypes = {
+    isOpen: PropTypes.bool.isRequired,
+    onClose: PropTypes.func.isRequired,
+    onConfirm: PropTypes.func.isRequired,
+    loading: PropTypes.bool,
 };
 
 export default DeleteModal;
