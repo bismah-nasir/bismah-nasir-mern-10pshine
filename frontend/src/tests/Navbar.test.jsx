@@ -87,4 +87,49 @@ describe("Navbar Component", () => {
 
         expect(screen.getByTestId("profile-modal")).toBeInTheDocument();
     });
+
+    it("closes profile menu when clicking outside", () => {
+        renderNavbar();
+
+        // Open menu first
+        const profileBtn = screen.getByText("J").closest("button");
+        fireEvent.click(profileBtn);
+        expect(screen.getByText("Logout")).toBeInTheDocument();
+
+        // Simulate clicking outside (on the document body)
+        fireEvent.mouseDown(document.body);
+
+        // Menu should close
+        expect(screen.queryByText("Logout")).not.toBeInTheDocument();
+    });
+
+    it("renders default values when userInfo is null", () => {
+        render(
+            <BrowserRouter>
+                <Navbar userInfo={null} onSearch={vi.fn()} />
+            </BrowserRouter>,
+        );
+
+        // Should see defaults defined in your code
+        expect(screen.getByText("User")).toBeInTheDocument(); // Fallback for username
+        expect(screen.getByText("U")).toBeInTheDocument(); // Fallback for initial
+    });
+
+    it("removes event listener on unmount", () => {
+        const { unmount } = renderNavbar();
+
+        // Spy on removeEventListener
+        const removeEventListenerSpy = vi.spyOn(
+            document,
+            "removeEventListener",
+        );
+
+        // Unmount the component
+        unmount();
+
+        expect(removeEventListenerSpy).toHaveBeenCalledWith(
+            "mousedown",
+            expect.any(Function),
+        );
+    });
 });
