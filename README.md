@@ -170,6 +170,6 @@ This project is integrated with SonarCloud via GitHub Actions to ensure code qua
 
 **Bismah Nasir**
 
-[GitHub Profile](https://github.com/)
+[GitHub Profile](https://github.com/bismah-nasir)
 
 [LinkedIn Profile](https://www.linkedin.com/in/bismah-nasir/)
