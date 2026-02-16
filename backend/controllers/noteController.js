@@ -39,8 +39,8 @@ const createNote = async (req, res, next) => {
             content,
             category: category || "General",
             tags: tags || [],
-            isPinned: isPinned || false,
-            isArchived: isArchived || false,
+            isPinned: Boolean(isPinned),
+            isArchived: Boolean(isArchived),
         });
 
         logger.info(

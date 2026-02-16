@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import PropTypes from "prop-types";
 import { useEditor, EditorContent, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Highlight from "@tiptap/extension-highlight";
@@ -51,6 +52,14 @@ const MenuButton = ({ onClick, isActive, disabled, children, label }) => (
     </button>
 );
 
+MenuButton.propTypes = {
+    onClick: PropTypes.func.isRequired,
+    isActive: PropTypes.bool,
+    disabled: PropTypes.bool,
+    children: PropTypes.node.isRequired,
+    label: PropTypes.string.isRequired,
+};
+
 const LinkInput = ({ editor, isOpen, onClose }) => {
     const [url, setUrl] = useState("");
 
@@ -94,6 +103,12 @@ const LinkInput = ({ editor, isOpen, onClose }) => {
             </button>
         </div>
     );
+};
+
+LinkInput.propTypes = {
+    editor: PropTypes.object.isRequired,
+    isOpen: PropTypes.bool.isRequired,
+    onClose: PropTypes.func.isRequired,
 };
 
 const NoteModal = ({ isOpen, onClose, note, refreshNotes }) => {
@@ -677,6 +692,18 @@ const NoteModal = ({ isOpen, onClose, note, refreshNotes }) => {
             </main>
         </div>
     );
+};
+
+NoteModal.propTypes = {
+    isOpen: PropTypes.bool.isRequired,
+    onClose: PropTypes.func.isRequired,
+    note: PropTypes.shape({
+        _id: PropTypes.string,
+        title: PropTypes.string,
+        content: PropTypes.string,
+        tags: PropTypes.arrayOf(PropTypes.string),
+    }),
+    refreshNotes: PropTypes.func.isRequired,
 };
 
 export default NoteModal;
