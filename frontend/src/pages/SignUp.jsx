@@ -1,0 +1,270 @@
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import { RiEyeLine, RiEyeOffLine, RiErrorWarningFill } from "react-icons/ri";
+import AuthLayout from "../components/AuthLayout";
+
+const SignUp = () => {
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const navigate = useNavigate();
+
+    // 1. State to hold user input
+    const [formData, setFormData] = useState({
+        name: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+    });
+
+    // 2. State to hold validation errors
+    const [errors, setErrors] = useState({});
+
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.id]: e.target.value });
+
+        // Clear error when user starts typing again
+        if (errors[e.target.id]) {
+            setErrors({ ...errors, [e.target.id]: null });
+        }
+    };
+
+    // 3. Validation Logic
+    const validateForm = () => {
+        const newErrors = {};
+
+        // Name Validation
+        if (!formData.name) {
+            newErrors.name = "Name is required";
+        }
+
+        // Email Validation
+        if (!formData.email) {
+            newErrors.email = "Email is required";
+        } else {
+            // This is a standard regex logic.
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(formData.email)) {
+                newErrors.email = "Please enter a valid email address";
+            }
+        }
+
+        // Password Validation
+        if (!formData.password) {
+            newErrors.password = "Password is required";
+        } else if (formData.password.length < 6) {
+            newErrors.password = "Password must be at least 6 characters";
+        }
+
+        // Confirm Password Validation
+        if (!formData.confirmPassword) {
+            newErrors.confirmPassword = "Password is required";
+        } else if (formData.password !== formData.confirmPassword) {
+            newErrors.confirmPassword = "Passwords do not match";
+        }
+
+        setErrors(newErrors);
+        // Return true if no errors
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (validateForm()) {
+            setIsLoading(true);
+            try {
+                const response = await fetch("/api/users/register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        username: formData.name,
+                        email: formData.email,
+                        password: formData.password,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    toast.success("Account created! Redirecting...");
+
+                    setTimeout(() => {
+                        navigate("/login");
+                    }, 2000);
+                } else {
+                    // Show API error
+                    toast.error(data.message || "Registration failed");
+                }
+            } catch (error) {
+                toast.error("Server error. Please try again.");
+            } finally {
+                setIsLoading(false);
+            }
+        } else {
+            // Toast for validation errors
+            toast.error("Please fix the errors in the form");
+        }
+    };
+
+    return (
+        <AuthLayout
+            title="Create Account"
+            subtitle="Join us to start organizing your notes securely">
+            <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+                {/* Name */}
+                <div className="relative">
+                    <input
+                        id="name"
+                        type="text"
+                        value={formData.name}
+                        onChange={handleChange}
+                        className="peer w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm placeholder-transparent"
+                        placeholder="Full Name"
+                    />
+                    <label
+                        htmlFor="name"
+                        className="absolute left-4 -top-2.5 bg-white px-1 text-xs font-medium text-slate-600 transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:top-3 peer-placeholder-shown:text-slate-400 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-primary">
+                        Full Name
+                    </label>
+
+                    {/* Error */}
+                    {errors.name && (
+                        <p className="text-red-500 text-xs mt-1 flex items-center">
+                            <RiErrorWarningFill className="mr-1" />{" "}
+                            {errors.name}
+                        </p>
+                    )}
+                </div>
+
+                {/* Email */}
+                <div className="relative">
+                    <input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        className="peer w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm placeholder-transparent"
+                        placeholder="Email Address"
+                    />
+                    <label
+                        htmlFor="email"
+                        className="absolute left-4 -top-2.5 bg-white px-1 text-xs font-medium text-slate-600 transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:top-3 peer-placeholder-shown:text-slate-400 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-primary">
+                        Email Address
+                    </label>
+
+                    {/* Error */}
+                    {errors.email && (
+                        <p className="text-red-500 text-xs mt-1 flex items-center">
+                            <RiErrorWarningFill className="mr-1" />{" "}
+                            {errors.email}
+                        </p>
+                    )}
+                </div>
+
+                {/* Password */}
+                <div className="relative">
+                    <input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        value={formData.password}
+                        onChange={handleChange}
+                        className="peer w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm placeholder-transparent pr-12"
+                        placeholder="Password"
+                    />
+                    <label
+                        htmlFor="password"
+                        className="absolute left-4 -top-2.5 bg-white px-1 text-xs font-medium text-slate-600 transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:top-3 peer-placeholder-shown:text-slate-400 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-primary">
+                        Password
+                    </label>
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-3 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
+                        {showPassword ? (
+                            <RiEyeOffLine size={20} />
+                        ) : (
+                            <RiEyeLine size={20} />
+                        )}
+                    </button>
+
+                    {/* Instruction */}
+                    {!errors.password && (
+                        <p className="text-slate-400 text-[10px] mt-1 ml-1">
+                            Must be at least 6 characters
+                        </p>
+                    )}
+
+                    {/* Error */}
+                    {errors.password && (
+                        <p className="text-red-500 text-xs mt-1 flex items-center">
+                            <RiErrorWarningFill className="mr-1" />{" "}
+                            {errors.password}
+                        </p>
+                    )}
+                </div>
+
+                {/* Confirm Password */}
+                <div className="relative">
+                    <input
+                        id="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        className="peer w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm placeholder-transparent pr-12"
+                        placeholder="Re-enter password"
+                    />
+                    <label
+                        htmlFor="confirmPassword"
+                        className="absolute left-4 -top-2.5 bg-white px-1 text-xs font-medium text-slate-600 transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:top-3 peer-placeholder-shown:text-slate-400 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-primary">
+                        Confirm Password
+                    </label>
+                    <button
+                        type="button"
+                        onClick={() =>
+                            setShowConfirmPassword(!showConfirmPassword)
+                        }
+                        className="absolute right-4 top-3 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
+                        {showConfirmPassword ? (
+                            <RiEyeOffLine size={20} />
+                        ) : (
+                            <RiEyeLine size={20} />
+                        )}
+                    </button>
+
+                    {/* Error */}
+                    {errors.confirmPassword && (
+                        <p className="text-red-500 text-xs mt-1 flex items-center">
+                            <RiErrorWarningFill className="mr-1" />{" "}
+                            {errors.confirmPassword}
+                        </p>
+                    )}
+                </div>
+
+                {/* Submit Button */}
+                <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-primary hover:bg-primary-dark text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 whitespace-nowrap cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                    {isLoading ? "Creating Account..." : "Create Account"}
+                </button>
+
+                {/* Toggle to Login */}
+                <div className="text-center mt-6">
+                    <p className="text-sm text-slate-600">
+                        Already have an account?{" "}
+                        <Link
+                            to="/login"
+                            className="text-primary hover:text-primary-dark font-medium whitespace-nowrap cursor-pointer">
+                            Sign in
+                        </Link>
+                    </p>
+                </div>
+            </form>
+        </AuthLayout>
+    );
+};
+
+export default SignUp;
