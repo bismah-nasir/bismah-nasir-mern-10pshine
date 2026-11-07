@@ -1,0 +1,24 @@
+{
+  "name": "notes-manager-video",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.jsx --port=3123",
+    "poster": "remotion still src/index.jsx Poster out/poster.jpg --jpeg-quality=95 --scale=2 --port=3123",
+    "capture": "node scripts/capture.mjs",
+    "demo": "node scripts/music.mjs && remotion render src/index.jsx Demo out/notes-manager-demo.mp4 --codec=h264 --crf=20 --port=3123",
+    "music": "node scripts/music.mjs"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.541",
+    "@remotion/google-fonts": "^4.0.541",
+    "@remotion/transitions": "4.0.541",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remotion": "^4.0.541"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.65.0"
+  }
+}
