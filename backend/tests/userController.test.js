@@ -42,7 +42,7 @@ describe("User Controller - Unit Tests", () => {
             req.body = {
                 username: "test",
                 email: "new@test.com",
-                password: "123",
+                password: "123456",
             };
 
             sandbox.stub(User, "findOne").resolves(null);
@@ -62,8 +62,34 @@ describe("User Controller - Unit Tests", () => {
             expect(res.json.firstCall.args[0]).to.have.property("token");
         });
 
+        it("should reject a missing or short password (400)", async () => {
+            for (const password of [undefined, "12345", { $gt: "" }]) {
+                res.status.resetHistory();
+                next.resetHistory();
+                req.body = { username: "test", email: "new@test.com", password };
+
+                await userController.registerUser(req, res, next);
+
+                expect(res.status.calledWith(400)).to.be.true;
+                expect(next.args[0][0].message).to.equal(
+                    "Password must be at least 6 characters",
+                );
+            }
+        });
+
+        it("should reject a missing username or email (400)", async () => {
+            req.body = { password: "123456" };
+
+            await userController.registerUser(req, res, next);
+
+            expect(res.status.calledWith(400)).to.be.true;
+            expect(next.args[0][0].message).to.equal(
+                "Please add a username and email",
+            );
+        });
+
         it("should handle User already exists (400)", async () => {
-            req.body = { email: "exist@test.com" };
+            req.body = { username: "test", email: "exist@test.com", password: "123456" };
             sandbox.stub(User, "findOne").resolves({ email: "exist@test.com" });
 
             await userController.registerUser(req, res, next);
@@ -110,6 +136,16 @@ describe("User Controller - Unit Tests", () => {
             expect(res.status.calledWith(401)).to.be.true;
             expect(next.calledWithMatch(sinon.match.instanceOf(Error))).to.be
                 .true;
+            expect(next.args[0][0].message).to.equal("Invalid credentials");
+        });
+
+        it("should return 401 (not a crash) if password is missing", async () => {
+            req.body = { email: "test@test.com" };
+            sandbox.stub(User, "findOne").resolves({ password: "hashed" });
+
+            await userController.loginUser(req, res, next);
+
+            expect(res.status.calledWith(401)).to.be.true;
             expect(next.args[0][0].message).to.equal("Invalid credentials");
         });
 
@@ -199,16 +235,19 @@ describe("User Controller - Unit Tests", () => {
             expect(res.status.calledWith(200)).to.be.true;
         });
 
-        it("should return 404 if user not found", async () => {
+        it("should give the same reply for an unknown email, without sending mail", async () => {
             req.body.email = "missing";
             sandbox.stub(User, "findOne").resolves(null);
+            const sendStub = sandbox.stub(sendEmail, "sendEmail").resolves(true);
 
             await userController.forgotPassword(req, res, next);
 
-            expect(res.status.calledWith(404)).to.be.true;
-            expect(next.calledWithMatch(sinon.match.instanceOf(Error))).to.be
-                .true;
-            expect(next.args[0][0].message).to.equal("User not found");
+            expect(res.status.calledWith(200)).to.be.true;
+            expect(res.json.args[0][0].data).to.equal(
+                "If that email is registered, a reset link has been sent",
+            );
+            expect(sendStub.called).to.be.false;
+            expect(next.called).to.be.false;
         });
     });
 
@@ -240,6 +279,18 @@ describe("User Controller - Unit Tests", () => {
             expect(mockUser.resetPasswordToken).to.be.undefined;
             expect(mockUser.resetPasswordExpire).to.be.undefined;
             expect(res.status.calledWith(200)).to.be.true;
+        });
+
+        it("should reject a short new password (400)", async () => {
+            req.params.resetToken = "raw_token";
+            req.body.password = "123";
+            const mockUser = { save: sandbox.stub().resolves(true) };
+            sandbox.stub(User, "findOne").resolves(mockUser);
+
+            await userController.resetPassword(req, res, next);
+
+            expect(res.status.calledWith(400)).to.be.true;
+            expect(mockUser.save.called).to.be.false;
         });
 
         it("should return 400 for invalid/expired token", async () => {

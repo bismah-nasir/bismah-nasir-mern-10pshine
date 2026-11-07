@@ -34,6 +34,7 @@ import {
     RiArrowGoBackLine,
     RiArrowGoForwardLine,
 } from "react-icons/ri";
+import { getStoredUser } from "../utils/session";
 
 const MenuButton = ({ onClick, isActive, disabled, children, label }) => (
     <button
@@ -111,7 +112,15 @@ LinkInput.propTypes = {
     onClose: PropTypes.func.isRequired,
 };
 
-const NoteModal = ({ isOpen, onClose, note, refreshNotes }) => {
+const EMPTY_EDITOR_STATE = { textAlign: "left", wordCount: 0, charCount: 0 };
+
+const NoteModal = ({
+    isOpen,
+    onClose,
+    note,
+    refreshNotes,
+    onSessionExpired,
+}) => {
     const [title, setTitle] = useState("");
     const [tags, setTags] = useState([]);
     const [tagInput, setTagInput] = useState("");
@@ -148,6 +157,9 @@ const NoteModal = ({ isOpen, onClose, note, refreshNotes }) => {
 
     // Initialize Editor
     const editor = useEditor({
+        // Create the editor after mount. This modal is lazy loaded, so it mounts too late for
+        // Tiptap's default, which destroys an editor created during render after 1ms
+        immediatelyRender: false,
         extensions: [
             StarterKit,
             Highlight.configure({ multicolor: true }),
@@ -173,6 +185,9 @@ const NoteModal = ({ isOpen, onClose, note, refreshNotes }) => {
     const editorState = useEditorState({
         editor,
         selector: (ctx) => {
+            // No editor yet on the first render
+            if (!ctx.editor) return EMPTY_EDITOR_STATE;
+
             // Get current text
             const text = ctx.editor.getText();
 
@@ -201,8 +216,8 @@ const NoteModal = ({ isOpen, onClose, note, refreshNotes }) => {
                 isBlockquote: ctx.editor.isActive("blockquote") ?? false,
                 isCodeBlock: ctx.editor.isActive("codeBlock") ?? false,
                 isLink: ctx.editor.isActive("link") ?? false,
-                canRedo: editor.can().redo(),
-                canUndo: editor.can().undo(),
+                canRedo: ctx.editor.can().redo(),
+                canUndo: ctx.editor.can().undo(),
 
                 wordCount: words,
                 charCount: chars,
@@ -255,7 +270,7 @@ const NoteModal = ({ isOpen, onClose, note, refreshNotes }) => {
 
         setLoading(true);
         try {
-            const user = JSON.parse(localStorage.getItem("userInfo"));
+            const user = getStoredUser();
             const token = user?.token;
 
             const method = note ? "PUT" : "POST";
@@ -275,6 +290,11 @@ const NoteModal = ({ isOpen, onClose, note, refreshNotes }) => {
                 }),
             });
 
+            if (res.status === 401) {
+                onSessionExpired?.();
+                return;
+            }
+
             const data = await res.json();
 
             if (res.ok) {
@@ -284,7 +304,7 @@ const NoteModal = ({ isOpen, onClose, note, refreshNotes }) => {
             } else {
                 toast.error(data.message || "Something went wrong");
             }
-        } catch (error) {
+        } catch {
             toast.error("Server Error");
         } finally {
             setLoading(false);
@@ -305,20 +325,20 @@ const NoteModal = ({ isOpen, onClose, note, refreshNotes }) => {
                                 className="p-2 text-slate-600 hover:text-slate-850 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer">
                                 <RiArrowLeftLine className="text-xl" />
                             </button>
-                            <h2 className="text-sm font-medium text-slate-850">
+                            <h2 className="hidden sm:block text-sm font-medium text-slate-850">
                                 {note ? "Edit Note" : "Create Note"}
                             </h2>
                         </div>
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={handleClose}
-                                className="px-6 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200 whitespace-nowrap cursor-pointer">
+                                className="px-3 sm:px-6 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200 whitespace-nowrap cursor-pointer">
                                 Cancel
                             </button>
                             <button
                                 onClick={handleSave}
                                 disabled={loading}
-                                className="px-6 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-dark rounded-lg transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap cursor-pointer">
+                                className="px-3 sm:px-6 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-dark rounded-lg transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap cursor-pointer">
                                 <RiSaveLine className="text-lg" />
                                 {loading ? "Saving..." : "Save Note"}
                             </button>
@@ -695,6 +715,7 @@ const NoteModal = ({ isOpen, onClose, note, refreshNotes }) => {
 };
 
 NoteModal.propTypes = {
+    onSessionExpired: PropTypes.func,
     isOpen: PropTypes.bool.isRequired,
     onClose: PropTypes.func.isRequired,
     note: PropTypes.shape({

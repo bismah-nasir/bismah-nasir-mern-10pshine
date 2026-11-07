@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { RiAddLine, RiSortDesc } from "react-icons/ri";
@@ -6,10 +6,15 @@ import { RiAddLine, RiSortDesc } from "react-icons/ri";
 import Navbar from "../components/Navbar";
 import NoteCard from "../components/NoteCard";
 import DeleteModal from "../components/DeleteModal";
-import NoteModal from "../components/NoteModal";
+import { useSessionExpired } from "../hooks/useSessionExpired";
+import { getStoredUser } from "../utils/session";
+
+// The rich text editor is heavy, so only download it when a note is opened
+const NoteModal = lazy(() => import("../components/NoteModal"));
 
 const Home = () => {
     const navigate = useNavigate();
+    const handleSessionExpired = useSessionExpired();
     const [userInfo, setUserInfo] = useState(null);
     const [notes, setNotes] = useState([]);
     const [filteredNotes, setFilteredNotes] = useState([]);
@@ -25,15 +30,24 @@ const Home = () => {
         note: null, // null = create, object = edit
     });
 
+    // Must keep the same identity between renders: NoteModal adds a browser history
+    // entry whenever this changes, which would cancel its own close (history.back)
+    const closeEditor = useCallback(
+        () => setOpenEditor({ isOpen: false, note: null }),
+        [],
+    );
+
     // 1. Check Auth & Load User
     useEffect(() => {
-        const user = localStorage.getItem("userInfo");
+        const user = getStoredUser();
         if (user) {
-            setUserInfo(JSON.parse(user));
+            setUserInfo(user);
             fetchNotes(); // Load notes once user is confirmed
         } else {
             navigate("/login");
         }
+        // Only runs on page load: fetchNotes is a new function on every render
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [navigate]);
 
     // 2. Sort Notes
@@ -63,7 +77,7 @@ const Home = () => {
     const fetchNotes = async () => {
         try {
             // Get token directly from local storage to ensure it's available immediately
-            const user = JSON.parse(localStorage.getItem("userInfo"));
+            const user = getStoredUser();
             const token = user ? user.token : null;
 
             if (!token) return; // Stop if no token
@@ -75,6 +89,11 @@ const Home = () => {
                     Authorization: `Bearer ${token}`,
                 },
             });
+
+            if (res.status === 401) {
+                handleSessionExpired();
+                return;
+            }
 
             const data = await res.json();
 
@@ -129,7 +148,7 @@ const Home = () => {
 
         setIsDeleting(true);
         try {
-            const user = JSON.parse(localStorage.getItem("userInfo")); // Get token
+            const user = getStoredUser(); // Get token
 
             const res = await fetch(`/api/notes/${noteId}`, {
                 method: "DELETE",
@@ -137,6 +156,11 @@ const Home = () => {
                     Authorization: `Bearer ${user.token}`,
                 },
             });
+
+            if (res.status === 401) {
+                handleSessionExpired();
+                return;
+            }
 
             if (res.ok) {
                 toast.success("Note deleted");
@@ -170,7 +194,7 @@ const Home = () => {
     // 7. Pin/Unpin Logic
     const updateIsPinned = async (note) => {
         try {
-            const user = JSON.parse(localStorage.getItem("userInfo"));
+            const user = getStoredUser();
 
             const res = await fetch(`/api/notes/${note._id}`, {
                 method: "PUT",
@@ -180,6 +204,11 @@ const Home = () => {
                 },
                 body: JSON.stringify({ isPinned: !note.isPinned }), // Toggle Status
             });
+
+            if (res.status === 401) {
+                handleSessionExpired();
+                return;
+            }
 
             const data = await res.json();
 
@@ -203,7 +232,7 @@ const Home = () => {
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Header Section */}
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                     <div>
                         <h1 className="text-3xl font-bold text-slate-850 mb-2">
                             My Notes
@@ -215,7 +244,7 @@ const Home = () => {
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-wrap items-center justify-between sm:justify-start gap-4">
                         {/* Sort Dropdown */}
                         <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2">
                             <RiSortDesc className="text-slate-400" />
@@ -277,12 +306,17 @@ const Home = () => {
             />
 
             {/* Rendering Note Modal */}
-            <NoteModal
-                isOpen={openEditor.isOpen}
-                onClose={() => setOpenEditor({ isOpen: false, note: null })}
-                note={openEditor.note}
-                refreshNotes={fetchNotes}
-            />
+            {openEditor.isOpen && (
+                <Suspense fallback={null}>
+                    <NoteModal
+                        isOpen={openEditor.isOpen}
+                        onClose={closeEditor}
+                        onSessionExpired={handleSessionExpired}
+                        note={openEditor.note}
+                        refreshNotes={fetchNotes}
+                    />
+                </Suspense>
+            )}
         </div>
     );
 };

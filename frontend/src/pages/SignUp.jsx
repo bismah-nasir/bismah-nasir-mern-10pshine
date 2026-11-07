@@ -98,7 +98,7 @@ const SignUp = () => {
                     // Show API error
                     toast.error(data.message || "Registration failed");
                 }
-            } catch (error) {
+            } catch {
                 toast.error("Server error. Please try again.");
             } finally {
                 setIsLoading(false);

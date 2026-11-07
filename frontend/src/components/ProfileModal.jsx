@@ -8,8 +8,9 @@ import {
     RiCheckboxCircleFill,
 } from "react-icons/ri";
 import toast from "react-hot-toast";
+import { getStoredUser } from "../utils/session";
 
-const ProfileModal = ({ isOpen, onClose, userInfo }) => {
+const ProfileModal = ({ isOpen, onClose, userInfo, onSessionExpired }) => {
     const [isChangingPassword, setIsChangingPassword] = useState(false);
     const [passwords, setPasswords] = useState({
         newPassword: "",
@@ -55,7 +56,7 @@ const ProfileModal = ({ isOpen, onClose, userInfo }) => {
         // API Call
         setLoading(true);
         try {
-            const user = JSON.parse(localStorage.getItem("userInfo"));
+            const user = getStoredUser();
             const res = await fetch("/api/users/profile", {
                 method: "PUT",
                 headers: {
@@ -66,6 +67,11 @@ const ProfileModal = ({ isOpen, onClose, userInfo }) => {
                     password: passwords.newPassword,
                 }),
             });
+
+            if (res.status === 401) {
+                onSessionExpired?.();
+                return;
+            }
 
             const data = await res.json();
 
@@ -266,6 +272,7 @@ const ProfileModal = ({ isOpen, onClose, userInfo }) => {
 };
 
 ProfileModal.propTypes = {
+    onSessionExpired: PropTypes.func,
     isOpen: PropTypes.bool.isRequired,
     onClose: PropTypes.func.isRequired,
     userInfo: PropTypes.shape({

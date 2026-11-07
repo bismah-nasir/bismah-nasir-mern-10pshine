@@ -138,6 +138,22 @@ describe("Note Controller - Unit Tests", () => {
             expect(res.json.calledWith(updatedMock)).to.be.true;
         });
 
+        it("should ignore fields a client must not change (like the owner)", async () => {
+            req.params.id = "note_id_999";
+            req.body = { title: "New", user: "someone_else", _id: "other" };
+            sandbox.stub(Note, "findById").resolves({
+                _id: "note_id_999",
+                user: { toString: () => "user_id_123" },
+            });
+            const updateStub = sandbox
+                .stub(Note, "findByIdAndUpdate")
+                .resolves({});
+
+            await noteController.updateNote(req, res, next);
+
+            expect(updateStub.args[0][1]).to.deep.equal({ title: "New" });
+        });
+
         it("should return 404 if note not found", async () => {
             req.params.id = "missing_id";
             sandbox.stub(Note, "findById").resolves(null);

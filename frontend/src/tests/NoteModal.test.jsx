@@ -34,17 +34,20 @@ const mockChain = {
     run: vi.fn(),
 };
 
+// One stable object: a new one on each render would re-run NoteModal's editor effect forever
+const mockEditor = {
+    chain: () => mockChain,
+    can: () => ({ undo: () => true, redo: () => true }),
+    getHTML: mockGetHTML,
+    getText: () => "Mock Content",
+    isEmpty: false,
+    commands: {
+        setContent: mockSetContent,
+    },
+};
+
 vi.mock("@tiptap/react", () => ({
-    useEditor: () => ({
-        chain: () => mockChain,
-        can: () => ({ undo: () => true, redo: () => true }),
-        getHTML: mockGetHTML,
-        getText: () => "Mock Content",
-        isEmpty: false,
-        commands: {
-            setContent: mockSetContent,
-        },
-    }),
+    useEditor: () => mockEditor,
     useEditorState: () => ({
         isBold: false,
         charCount: 12,
@@ -53,7 +56,7 @@ vi.mock("@tiptap/react", () => ({
     EditorContent: () => <div data-testid="tiptap-editor">Editor Area</div>,
 }));
 
-describe.skip("NoteModal Component", () => {
+describe("NoteModal Component", () => {
     const mockOnClose = vi.fn();
     const mockRefreshNotes = vi.fn();
     const mockUserInfo = { token: "fake-token" };

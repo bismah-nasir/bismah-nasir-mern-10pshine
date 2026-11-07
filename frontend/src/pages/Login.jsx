@@ -70,7 +70,7 @@ const Login = () => {
                 } else {
                     toast.error(data.message || "Invalid credentials");
                 }
-            } catch (error) {
+            } catch {
                 toast.error("Server not responding.");
             } finally {
                 setIsLoading(false);
