@@ -80,7 +80,7 @@ describe("ForgotPassword Component", () => {
                 }),
             );
             expect(toast.success).toHaveBeenCalledWith(
-                "Check your email for the reset link!",
+                "If that email is registered, a reset link is on its way.",
             );
         });
     });

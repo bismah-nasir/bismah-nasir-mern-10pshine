@@ -92,6 +92,7 @@ MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_super_secret_key
 EMAIL_USERNAME=your_email@gmail.com
 EMAIL_PASSWORD=your_email_app_password
+FRONTEND_URL=http://localhost:5173
 ```
 
 Run the server:

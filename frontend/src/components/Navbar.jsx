@@ -8,10 +8,12 @@ import {
     RiLogoutBoxRLine,
 } from "react-icons/ri";
 import ProfileModal from "./ProfileModal";
+import { useSessionExpired } from "../hooks/useSessionExpired";
 import toast from "react-hot-toast";
 
 const Navbar = ({ userInfo, onSearch }) => {
     const navigate = useNavigate();
+    const handleSessionExpired = useSessionExpired();
 
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -39,9 +41,9 @@ const Navbar = ({ userInfo, onSearch }) => {
         <>
             <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
-                        {/* Logo & Search */}
-                        <div className="flex items-center gap-8">
+                    <div className="flex flex-wrap items-center justify-between min-h-16 py-2 md:flex-nowrap md:py-0">
+                        {/* Logo & Search: on phones, search drops onto its own full-width row */}
+                        <div className="contents md:flex md:items-center md:gap-8">
                             <div className="flex items-center gap-3">
                                 <img
                                     alt="Logo"
@@ -53,14 +55,14 @@ const Navbar = ({ userInfo, onSearch }) => {
                                 </span>
                             </div>
 
-                            <div className="hidden md:block relative">
+                            <div className="order-last w-full mt-2 md:order-none md:w-auto md:mt-0 relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <RiSearchLine className="text-slate-400" />
                                 </div>
                                 <input
                                     placeholder="Search notes..."
                                     onChange={(e) => onSearch(e.target.value)}
-                                    className="w-80 pl-10 pr-4 py-2 border border-slate-200 text-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                                    className="w-full md:w-80 pl-10 pr-4 py-2 border border-slate-200 text-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                                     type="text"
                                 />
                             </div>
@@ -137,6 +139,7 @@ const Navbar = ({ userInfo, onSearch }) => {
 
             {/* Profile Modal Component */}
             <ProfileModal
+onSessionExpired={handleSessionExpired}
                 isOpen={isProfileModalOpen}
                 onClose={() => setIsProfileModalOpen(false)}
                 userInfo={userInfo}

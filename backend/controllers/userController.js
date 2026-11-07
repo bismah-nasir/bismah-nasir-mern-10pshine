@@ -5,6 +5,14 @@ const User = require("../models/User");
 const logger = require("../config/logger");
 const sendEmailUtils = require("../utils/sendEmail");
 
+const MIN_PASSWORD_LENGTH = 6;
+const PASSWORD_ERROR = `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
+// Same reply whether or not the email is registered, so this route can't reveal who has an account
+const FORGOT_PASSWORD_REPLY = "If that email is registered, a reset link has been sent";
+
+const isValidPassword = (password) =>
+    typeof password === "string" && password.length >= MIN_PASSWORD_LENGTH;
+
 // @desc    Register new user
 // @route   POST /api/users/register
 // @access  Public
@@ -12,6 +20,16 @@ const registerUser = async (req, res, next) => {
     const { username, email, password } = req.body;
 
     try {
+        if (!username || !email) {
+            res.status(400);
+            throw new Error("Please add a username and email");
+        }
+
+        if (!isValidPassword(password)) {
+            res.status(400);
+            throw new Error(PASSWORD_ERROR);
+        }
+
         const cleanEmail = String(email);
         const cleanUsername = String(username);
 
@@ -62,7 +80,11 @@ const loginUser = async (req, res, next) => {
         const user = await User.findOne({ email: String(email) });
 
         // 2. Check password
-        if (user && (await bcrypt.compare(password, user.password))) {
+        if (
+            user &&
+            typeof password === "string" &&
+            (await bcrypt.compare(password, user.password))
+        ) {
             logger.info(`User logged in: ${user.email}`);
             res.json({
                 _id: user.id,
@@ -89,7 +111,12 @@ const updateUserProfile = async (req, res, next) => {
 
         if (user) {
             // Update Password if provided
-            if (req.body.password) {
+            if (req.body.password !== undefined) {
+                if (!isValidPassword(req.body.password)) {
+                    res.status(400);
+                    throw new Error(PASSWORD_ERROR);
+                }
+
                 const salt = await bcrypt.genSalt(10);
                 user.password = await bcrypt.hash(req.body.password, salt);
             }
@@ -124,8 +151,10 @@ const forgotPassword = async (req, res, next) => {
         const user = await User.findOne({ email: String(email) });
 
         if (!user) {
-            res.status(404);
-            throw new Error("User not found");
+            logger.info("Password reset requested for an unknown email");
+            return res
+                .status(200)
+                .json({ success: true, data: FORGOT_PASSWORD_REPLY });
         }
 
         // 1. Generate Reset Token
@@ -143,7 +172,8 @@ const forgotPassword = async (req, res, next) => {
         await user.save();
 
         // 4. Create Reset URL (Points to Frontend)
-        const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+        const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
 
         const message = `You requested a password reset. Please click the link below to create a new password:\n\n${resetUrl}`;
 
@@ -155,7 +185,7 @@ const forgotPassword = async (req, res, next) => {
             });
 
             logger.info(`Password reset email sent to: ${email}`);
-            res.status(200).json({ success: true, data: "Email sent" });
+            res.status(200).json({ success: true, data: FORGOT_PASSWORD_REPLY });
         } catch (error) {
             logger.error(`Email send failed: ${error.message}`);
 
@@ -196,13 +226,13 @@ const resetPassword = async (req, res, next) => {
         }
 
         // 3. Set new password
-        if (req.body.password) {
-            const salt = await bcrypt.genSalt(10);
-            user.password = await bcrypt.hash(req.body.password, salt);
-        } else {
+        if (!isValidPassword(req.body.password)) {
             res.status(400);
-            throw new Error("Password is required");
+            throw new Error(PASSWORD_ERROR);
         }
+
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(req.body.password, salt);
 
         // 4. Clear reset fields
         user.resetPasswordToken = undefined;

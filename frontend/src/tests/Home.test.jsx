@@ -49,9 +49,13 @@ vi.mock("../components/DeleteModal", () => ({
         ) : null,
 }));
 
+const noteModalOnCloseProps = vi.hoisted(() => []);
+
 vi.mock("../components/NoteModal", () => ({
-    default: ({ isOpen }) =>
-        isOpen ? <div data-testid="note-modal">Modal Open</div> : null,
+    default: ({ isOpen, onClose }) => {
+        noteModalOnCloseProps.push(onClose);
+        return isOpen ? <div data-testid="note-modal">Modal Open</div> : null;
+    },
 }));
 
 describe("Home Page", () => {
@@ -84,6 +88,62 @@ describe("Home Page", () => {
         Storage.prototype.getItem = vi.fn(() => null); // No user
         render(<Home />);
         expect(mockNavigate).toHaveBeenCalledWith("/login");
+    });
+
+    it("treats a corrupted saved login as logged out", () => {
+        Storage.prototype.getItem = vi.fn(() => "{not json");
+        Storage.prototype.removeItem = vi.fn();
+
+        render(<Home />);
+
+        expect(Storage.prototype.removeItem).toHaveBeenCalledWith("userInfo");
+        expect(mockNavigate).toHaveBeenCalledWith("/login");
+    });
+
+    it("sends the user to login when the saved token is rejected", async () => {
+        Storage.prototype.removeItem = vi.fn();
+        global.fetch.mockResolvedValueOnce({
+            ok: false,
+            status: 401,
+            json: async () => ({ message: "Not authorized, token failed" }),
+        });
+
+        render(<Home />);
+
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith("/login"),
+        );
+        expect(Storage.prototype.removeItem).toHaveBeenCalledWith("userInfo");
+        expect(toast.error).toHaveBeenCalledWith(
+            "Your session has expired. Please log in again.",
+            { id: "session-expired" },
+        );
+    });
+
+    // A changing onClose re-adds a history entry in NoteModal, which leaves the editor open after saving
+    it("keeps the same NoteModal onClose across re-renders", async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            json: async () => mockNotes,
+        });
+        render(<Home />);
+        await screen.findByText("Apple");
+
+        fireEvent.click(screen.getByText("New Note"));
+        await screen.findByTestId("note-modal");
+        const original = noteModalOnCloseProps.at(-1);
+        noteModalOnCloseProps.length = 0;
+
+        fireEvent.change(screen.getByTestId("search-input"), {
+            target: { value: "App" },
+        });
+
+        await waitFor(() =>
+            expect(noteModalOnCloseProps.length).toBeGreaterThan(0),
+        );
+        expect(original).toBeTypeOf("function");
+        expect(noteModalOnCloseProps.every((fn) => fn === original)).toBe(true);
     });
 
     it("fetches and displays notes on load", async () => {
@@ -209,6 +269,6 @@ describe("Home Page", () => {
         // Click New Note button
         fireEvent.click(screen.getByText("New Note"));
 
-        expect(screen.getByTestId("note-modal")).toBeInTheDocument();
+        expect(await screen.findByTestId("note-modal")).toBeInTheDocument();
     });
 });

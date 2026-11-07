@@ -1,6 +1,16 @@
 const Note = require("../models/Note");
 const logger = require("../config/logger");
 
+// Only these fields can be changed by a client (never the owner, for example)
+const UPDATABLE_FIELDS = [
+    "title",
+    "content",
+    "category",
+    "tags",
+    "isPinned",
+    "isArchived",
+];
+
 // @desc    Get all notes for the logged-in user
 // @route   GET /api/notes
 // @access  Private
@@ -70,11 +80,19 @@ const updateNote = async (req, res, next) => {
             throw new Error("User not authorized");
         }
 
+        const updates = {};
+        for (const field of UPDATABLE_FIELDS) {
+            if (req.body[field] !== undefined) {
+                updates[field] = req.body[field];
+            }
+        }
+
         const updatedNote = await Note.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            updates,
             {
                 new: true,
+                runValidators: true,
             },
         );
 

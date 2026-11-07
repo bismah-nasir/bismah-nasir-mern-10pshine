@@ -28,6 +28,32 @@ describe("Error Middleware", () => {
         sinon.restore(); // Restore logger to normal
     });
 
+    it("should turn a malformed id into a 400", () => {
+        const err = Object.assign(new Error("Cast to ObjectId failed"), {
+            name: "CastError",
+            path: "_id",
+        });
+
+        errorHandler(err, req, res, next);
+
+        expect(res.status.calledWith(400)).to.be.true;
+        expect(res.json.args[0][0].message).to.equal("Invalid value for _id");
+    });
+
+    it("should turn a validation failure into a 400 with its messages", () => {
+        const err = Object.assign(new Error("User validation failed"), {
+            name: "ValidationError",
+            errors: { email: { message: "Please add a valid email address" } },
+        });
+
+        errorHandler(err, req, res, next);
+
+        expect(res.status.calledWith(400)).to.be.true;
+        expect(res.json.args[0][0].message).to.equal(
+            "Please add a valid email address",
+        );
+    });
+
     // 1. Default to 500 if status is 200
     it("should set status to 500 if current status is 200 (Server Crash)", () => {
         const err = new Error("Something went wrong");
